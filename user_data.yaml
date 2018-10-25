@@ -1,0 +1,16 @@
+#cloud-config
+
+packages:
+  - htop
+
+groups:
+  - name: backplane
+
+users:
+  - name: backplane
+    ssh-authorized-keys:
+      # mrddev
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6vpazAA3hMIwAAYWXcDPHgUNZPRoDj5eJqb7d1UzWBUwMdNEI6kpJIfpfK3d2wBoSFgbPkn0CRomonYkV6MBryfxUDQVZK3pxHgZ64DipsolGzIX7qYePiAh3PJ+urjTSe3URbW6yy/gyK1FF100AZKtCVX+y+wkHCcQa+3Lgl05BzF52ChF5vnlKgjlLnr1S5AEF3A8NpdNT2cXdDsdUAxlIfnfqQpnQ1oPJ3QsS2QAEtGJvAx8SKH7FltnnJo8iTeS1+4Mo6HFKm8P+leHuNmFtJnLtOGsRw59mDqNMYyUr+9DnNhLW1pQ0/CQe5fvYrnyLNayExGH31pTWv8SZ matt@oscillator.localdomain
+    sudo: [ 'ALL=(ALL) NOPASSWD:ALL' ]
+    groups: sudo
+
