@@ -1,5 +1,4 @@
 variable "zoneapex" {}
-variable "bptarget" {}
 variable "aws_region" {}
 variable "ami" {}
 variable "instance_type" {}

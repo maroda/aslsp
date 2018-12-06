@@ -6,5 +6,5 @@ resource "aws_route53_record" "wildcard" {
   name    = "*.${var.zoneapex}"
   type    = "CNAME"
   ttl     = "60"
-  records = ["${var.bptarget}"]
+  records = ["${aws_lb.aslsp.public_ip}"]
 }
