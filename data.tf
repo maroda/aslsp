@@ -7,8 +7,8 @@ data "aws_availability_zones" "all" {}
 # Route53 hosted zone
 #
 data "aws_route53_zone" "apex" {
-  name = "${var.zoneapex}"
-	depends_on = [ "aws_route53_zone.apex" ]
+  name       = "${var.zoneapex}"
+  depends_on = ["aws_route53_zone.apex"]
 }
 
 #
@@ -23,7 +23,7 @@ data "template_file" "user_data" {
   template = "${file("user_data.yaml")}"
 
   vars {
-    zoneapex                    = "${var.zoneapex}"
+    zoneapex = "${var.zoneapex}"
   }
 }
 
