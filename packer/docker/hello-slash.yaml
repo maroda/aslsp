@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: hello-slash
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: craque
+    spec:
+      containers:
+      - name: craque-front
+        image: maroda/craque:Cv001
+        ports:
+          - containerPort: 8888
+      imagePullSecrets:
+        - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-slash
+spec:
+  type: NodePort
+  selector:
+    app: craque
+  ports:
+  - protocol: TCP
+    port: 8888
+    targetPort: 8888
