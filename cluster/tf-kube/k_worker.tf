@@ -5,7 +5,7 @@
 resource "aws_instance" "worker" {
   count         = 3
   ami           = "${lookup(var.amis, var.region)}"
-  instance_type = "${var.worker_inst_type}"
+  instance_type = "${var.worker_instance_type}"
 
   subnet_id                   = "${aws_subnet.kube.id}"
   private_ip                  = "${cidrhost(var.vpc_cidr, 30 + count.index)}"

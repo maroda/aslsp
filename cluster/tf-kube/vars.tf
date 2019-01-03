@@ -45,7 +45,7 @@ variable vpc_cidr {
   default = "10.43.0.0/16"
 }
 
-variable kubernetes_pod_cidr {
+variable kube_pod_cidr {
   default = "10.200.0.0/16"
 }
 
@@ -83,6 +83,6 @@ variable worker_instance_type {
   default = "t3.small"
 }
 
-variable kubernetes_cluster_dns {
+variable kube_cluster_dns {
   default = "10.31.0.1"
 }

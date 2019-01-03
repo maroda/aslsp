@@ -5,7 +5,7 @@
 resource "aws_instance" "controller" {
   count         = 3
   ami           = "${lookup(var.amis, var.region)}"
-  instance_type = "${var.controller_inst_type}"
+  instance_type = "${var.controller_instance_type}"
 
   iam_instance_profile = "${aws_iam_instance_profile.kube.id}"
 

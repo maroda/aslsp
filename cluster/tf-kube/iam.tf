@@ -59,5 +59,5 @@ EOF
 # IAM instance profile for controller
 resource "aws_iam_instance_profile" "kube" {
   name  = "kube"
-  roles = ["${aws_iam_role.kube.name}"]
+  role = "${aws_iam_role.kube.name}"
 }
