@@ -48,9 +48,12 @@
     mode: 0755
   with_items: # Remote-to-remote copy doesn't support file glob yet
     - docker
+    - dockerd
     - docker-containerd
     - docker-containerd-ctr
     - docker-containerd-shim
+    - docker-init
+    - docker-proxy
     - docker-runc
   become: true
 

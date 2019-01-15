@@ -1,16 +1,21 @@
 [Unit]
 Description=Docker Application Container Engine
-Documentation=http://docs.docker.io
+Documentation=https://docs.docker.com
 
 [Service]
-ExecStart=/usr/bin/docker daemon \
-  --iptables=false \
-  --ip-masq=false \
-  --host=unix:///var/run/docker.sock \
-  --log-level=error \
-  --storage-driver=overlay
+Type=notify
+ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock
+ExecReload=/bin/kill -s HUP $MAINPID
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+TimeoutStartSec=0
+Delegate=yes
+KillMode=process
 Restart=on-failure
-RestartSec=5
+StartLimitBurst=3
+StartLimitInterval=60s
 
 [Install]
 WantedBy=multi-user.target
