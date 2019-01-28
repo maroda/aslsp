@@ -1,3 +1,6 @@
+#
+# Simple Front-End Kube
+#
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -17,6 +20,14 @@ spec:
           value: "http://bacque/fetch"
         ports:
           - containerPort: 8888
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8888
+          periodSeconds: 2
+          initialDelaySeconds: 0
+          failureThreshold: 3
+          successThreshold: 1
       imagePullSecrets:
         - name: crqregcred
 ---
