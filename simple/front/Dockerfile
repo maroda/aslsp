@@ -1,5 +1,5 @@
 FROM golang:1.11.3-alpine3.8
-LABEL net.craque.version="002"
+LABEL net.craque.version="003"
 LABEL vendor="Sounding"
 EXPOSE 8888
 WORKDIR /go/src/craque/

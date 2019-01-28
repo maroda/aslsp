@@ -1,3 +1,6 @@
+#
+# Simple Back-End Kube
+#
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -14,6 +17,14 @@ spec:
         image: maroda/craque:Bv003
         ports:
           - containerPort: 9999
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 9999
+          periodSeconds: 2
+          initialDelaySeconds: 0
+          failureThreshold: 3
+          successThreshold: 1
       imagePullSecrets:
         - name: crqregcred
 ---
