@@ -4,7 +4,10 @@
 
 	/ - Hello
 	/dt - retrieves the datetime from Bacque
-	/ping - a liveliness check
+	/ping - a readiness check
+	/m - prometheus metrics
+
+	Version = Cv004
 
 */
 
@@ -17,12 +20,29 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-// liveliness check
+// define prometheus metrics
+var dtCount = prometheus.NewCounter(prometheus.CounterOpts{
+	Name: "craque_dt_total",
+	Help: "Total number of requests for DateTime.",
+})
+var rootCount = prometheus.NewCounter(prometheus.CounterOpts{
+	Name: "craque_root_total",
+	Help: "Total number of requests for /.",
+})
+var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
+	Name: "craque_ping_total",
+	Help: "Total number of requests for Readiness /ping.",
+})
+
+// readiness check
 func ping(w http.ResponseWriter, r *http.Request) {
+	pingCount.Add(1)
 	w.Write([]byte("pong\n"))
 	zerolog.TimeFieldFormat = ""
 	log.Info().
@@ -36,9 +56,8 @@ func ping(w http.ResponseWriter, r *http.Request) {
 }
 
 // check the backend server for a datetimestamp
-// for now hardcoded, with kube it will need modification
 func dt(w http.ResponseWriter, r *http.Request) {
-	// url := "http://localhost:9999/fetch"
+	dtCount.Add(1)
 	url := os.Getenv("BACQUE")
 	craqueClient := http.Client{
 		Timeout: time.Second * 2,
@@ -76,10 +95,15 @@ func dt(w http.ResponseWriter, r *http.Request) {
 		Msg("")
 }
 
-// print Hello and the request path
-// if there is no valid endpoint, it will always default here
 func main() {
+	prometheus.MustRegister(dtCount)
+	prometheus.MustRegister(rootCount)
+	prometheus.MustRegister(pingCount)
+
+	// print Hello and the request path
+	// if there is no valid endpoint, it will always default here
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		rootCount.Add(1)
 		fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
 		zerolog.TimeFieldFormat = ""
 		log.Info().
@@ -92,11 +116,14 @@ func main() {
 			Msg("")
 	})
 
-	// valid endpoints:
 	// dt ::: gets the datetime from a remote service
 	http.HandleFunc("/dt", dt)
-	// ping ::: liveliness check that returns 'pong'
+
+	// ping ::: readiness check that returns 'pong'
 	http.HandleFunc("/ping", ping)
+
+	// m ::: prometheus metrics endpoint (can this be logged?)
+	http.Handle("/m", promhttp.Handler())
 
 	// start server
 	if err := http.ListenAndServe(":8888", nil); err != nil {
