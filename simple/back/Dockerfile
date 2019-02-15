@@ -1,10 +1,12 @@
-FROM golang:1.11.3-alpine3.8
-LABEL net.bacque.version="003"
+FROM golang:1.11.5-alpine3.9
+LABEL version="004"
 LABEL vendor="Sounding"
 EXPOSE 9999
 WORKDIR /go/src/bacque/
 COPY . .
 RUN apk add --no-cache git
 RUN go get github.com/rs/zerolog
+RUN go get github.com/netdata/statsd
+RUN go get github.com/prometheus/client_golang/prometheus
 RUN go build -o /bin/bacque
 ENTRYPOINT ["/bin/bacque"]

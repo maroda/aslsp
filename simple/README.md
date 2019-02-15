@@ -8,14 +8,14 @@ The build process so far is simple:
 cd ./cluster
 kubectl apply -f craque-ns.yaml
 cd ../front
-docker build -t craque:Bv003 .
-docker tag craque:Bv003 docker.io/maroda/craque:Bv003
-docker push docker.io/maroda/craque:Bv003
+docker build -t craque:Cv004 .
+docker tag craque:Cv004 docker.io/maroda/craque:Cv004
+docker push docker.io/maroda/craque:Cv004
 kubectl -n crq apply -f craque.yaml
 cd ../back
-docker build -t craque:Cv003 .
-docker tag craque:Cv003 docker.io/maroda/craque:Cv003
-docker push docker.io/maroda/craque:Cv003
+docker build -t craque:Bv004 .
+docker tag craque:Bv004 docker.io/maroda/craque:Bv004
+docker push docker.io/maroda/craque:Bv004
 kubectl -n crq apply -f bacque.yaml
 ```
 

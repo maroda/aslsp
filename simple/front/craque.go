@@ -20,11 +20,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/netdata/statsd"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	statsd "gopkg.in/alexcesaro/statsd.v2"
 )
 
 // define prometheus metrics
@@ -98,13 +98,13 @@ func dt(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// statsd setup, local to main for now
-	// connects to port 8125 by default
-	// need to run this with a statsd server
-	stsd, err := statsd.New()
+	statsW, err := statsd.UDP(":8125")
 	if err != nil {
 		panic(err)
 	}
-	defer stsd.Close()
+
+	statsD := statsd.NewClient(statsW, "prefix.")
+	statsD.FlushEvery(5 * time.Second)
 
 	// enable metrics for each endpoint
 	prometheus.MustRegister(dtCount)
@@ -115,7 +115,7 @@ func main() {
 	// if there is no valid endpoint, it will always default here
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		rootCount.Add(1)
-		stsd.Increment("root.counter")
+		statsD.Count("craque_root_statd", 1)
 		fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
 		zerolog.TimeFieldFormat = ""
 		log.Info().
