@@ -2,31 +2,49 @@
 
 An extremely simple front-back HTTP app written in Go, packaged as Docker containers, and deployable in Kubernetes.
 
-The build process so far is simple:
+## Build
+
+* Replace Cv0XX with the current version of **front/craque**
+* Replace Bv0XX with the current version of **back/bacque**
 
 ```
-cd ./cluster
-kubectl apply -f craque-ns.yaml
 cd ../front
-docker build -t craque:Cv004 .
-docker tag craque:Cv004 docker.io/maroda/craque:Cv004
-docker push docker.io/maroda/craque:Cv004
-kubectl -n crq apply -f craque.yaml
+docker build -t craque:Cv0XX .
+docker tag craque:Cv0XX docker.io/maroda/craque:Cv0XX
+docker push docker.io/maroda/craque:Cv0XX
 cd ../back
-docker build -t craque:Bv004 .
-docker tag craque:Bv004 docker.io/maroda/craque:Bv004
-docker push docker.io/maroda/craque:Bv004
-kubectl -n crq apply -f bacque.yaml
+docker build -t craque:Bv0XX .
+docker tag craque:Bv0XX docker.io/maroda/craque:Bv0XX
+docker push docker.io/maroda/craque:Bv0XX
 ```
 
-If it's a private repo, make sure to add the secret to the namespace:
+## Deploy to New Kubernetes Cluster
+The app **front/craque** requires the environment variable `BACQUE` be set to the endpoint serving **back/bacque**.
+In kubernetes (front.craque.yaml) this is set to `"http://bacque/fetch"`.
 
-	kubectl -n crq create secret docker-registry crqregcred --docker-server='https://index.docker.io/v1/' --docker-username='USER' --docker-password='PASS' --docker-email='EMAIL'
-
-Once deployed, *craque* will access the *bacque* server to retrieve the local time.
+Once deployed, *craque* will access the *bacque* server to display some dynamically retrieved data, including a datetime stamp.
 
 	http://craque_loadbalancer_url/dt
 
-Both apps also have a `/ping` endpoint for configuring liveliness tests (not yet configured).
-
 Going to any invalid endpoint (e.g.: `/`, `/foo`, `/pickles`) will simply return "Hello. `/<endpoint>`"
+
+1. `export KUBECONFIG=<ABS_PATH_CONFIG>`
+2. Create the namespace: `kubectl apply -f cluster/craque-ns.yaml`
+3. Add the docker registry private repo creds: `kubectl -n crq create secret docker-registry regcred --docker-server='https://index.docker.io/v1/' --docker-username='maroda' --docker-password='<REDACTED>' --docker-email='maroda@gmail.com'`
+4. Deploy backend: `kubectl -n crq apply -f back/bacque.yaml`
+5. Deploy frontend: `kubectl -n crq apply -f front/craque.yaml`
+6. Get DNS for LoadBalancer: 
+7. Apply DNS: `pushd tf && terraform apply -var 'simple_lb=<DNS_FOR_LB>' -auto-approve && popd`
+
+The last step requires AWS auth and a DNS zone already configured.
+
+## Issues
+
+I've noticed that upon first launch, *craque* does not immediately return a value when `/dt` is called.
+
+In a graphical browser, it will hang for a bit, but then eventually return the datetime.
+
+If the first run is with curl, the timeout seems shorter, and will throw the error **curl: (52) Empty reply from server**.
+
+This looks potentially related to a delay from the *bacque* endpoint `/fetch` because it seemed to happen multiple times, but never more times than there are replicas of *bacque*. Hypothesis is that once the `/fetch` endpoint on each pod is accessed and whatever lag/delay happens, it never has another delay and returns things normally. 
+
