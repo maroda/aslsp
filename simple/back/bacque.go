@@ -3,10 +3,14 @@
 	Bacque
 
 	/ - Hello
-	/fetch - retrieves the localtime from the containing OS
-	/ping - a liveliness check
+	/fetch - returns three 'dynamic' actions:
+			- retrieves local timestamp from the container OS
+			- displays the client Request IP address
+			- reports Local IP based on default egress
+	/ping - a readiness check
+	/m - prometheus metrics
 
-	Version = Bv004
+	Version = Bv005
 
 */
 
@@ -14,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os/exec"
 
@@ -41,13 +46,47 @@ var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
 func fetch(w http.ResponseWriter, r *http.Request) {
 	// access a local command and return its output
 	fetchCount.Add(1)
+	arg := "+%Y%m%d%H%S"
 	app := "date"
-	cmd := exec.Command(app)
-	stdout, err := cmd.Output()
+	stdout, err := exec.Command(app, arg).Output()
 	if err != nil {
 		log.Fatal()
 	}
-	fmt.Fprintf(w, "%s", stdout)
+
+	fmt.Fprintf(w, "DateTime=%s", stdout)
+
+	// grab just the IP of the requestor
+	rHost, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		log.Fatal()
+	}
+
+	userIP := net.ParseIP(rHost)
+	if userIP == nil {
+		log.Fatal()
+	}
+
+	// display request IP
+	fmt.Fprintf(w, "RequestIP=%s\n", rHost)
+
+	// an outgoing UDP connection reveals the egress IP
+	extAddr := "8.8.8.8:80"
+	conn, err := net.Dial("udp", extAddr)
+	if err != nil {
+		log.Fatal()
+	}
+	defer conn.Close()
+
+	// grab just the local IP (byte -> string conversion required)
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	lHost, _, err := net.SplitHostPort(localAddr.String())
+	if err != nil {
+		log.Fatal()
+	}
+
+	// display local IP
+	fmt.Fprintf(w, "LocalIP=%s\n", lHost)
+
 	zerolog.TimeFieldFormat = ""
 	log.Info().
 		Str("host", r.Host).
@@ -59,7 +98,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 		Msg("")
 }
 
-// liveliness check
+// readiness check
 func ping(w http.ResponseWriter, r *http.Request) {
 	pingCount.Add(1)
 	w.Write([]byte("pong\n"))
@@ -98,7 +137,7 @@ func main() {
 	// fetch local command output
 	http.HandleFunc("/fetch", fetch)
 
-	// ping ::: liveliness check that returns 'pong'
+	// ping ::: readiness check that returns 'pong'
 	http.HandleFunc("/ping", ping)
 
 	// m ::: prometheus metrics endpoint (can this be logged?)
