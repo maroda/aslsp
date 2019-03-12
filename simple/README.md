@@ -18,23 +18,39 @@ docker tag craque:Bv0XX docker.io/maroda/craque:Bv0XX
 docker push docker.io/maroda/craque:Bv0XX
 ```
 
-## Deploy to New Kubernetes Cluster
+## ARM
+For running on Raspberry Pi 3
+```
+GOARCH=arm GOARM=7 GOOS=linux go build -o craque-arm front/
+GOARCH=arm GOARM=7 GOOS=linux go build -o bacque-arm back/
+```
+
+## Operation
 The app **front/craque** requires the environment variable `BACQUE` be set to the endpoint serving **back/bacque**.
+
 In kubernetes (front.craque.yaml) this is set to `"http://bacque/fetch"`.
 
-Once deployed, *craque* will access the *bacque* server to display some dynamically retrieved data, including a datetime stamp.
+Running the go app directly, use `export BACQUE="http://localhost:9999/fetch"`.
 
-	http://craque_loadbalancer_url/dt
+Once deployed, *craque* will access the *bacque* server to display some dynamically retrieved data, including a datetime stamp.
+Hitting [http://app.craq.io/dt]() will return something like this:
+
+```
+DateTime=201902202006
+RequestIP=192.168.192.65
+LocalIP=192.168.142.193
+```
 
 Going to any invalid endpoint (e.g.: `/`, `/foo`, `/pickles`) will simply return "Hello. `/<endpoint>`"
 
-1. `export KUBECONFIG=<ABS_PATH_CONFIG>`
+## Deploy to New Kubernetes Cluster
+1. Configure context: `export KUBECONFIG=<ABS_PATH_CONFIG>`
 2. Create the namespace: `kubectl apply -f cluster/craque-ns.yaml`
-3. Add the docker registry private repo creds: `kubectl -n crq create secret docker-registry regcred --docker-server='https://index.docker.io/v1/' --docker-username='maroda' --docker-password='<REDACTED>' --docker-email='maroda@gmail.com'`
+3. Add docker registry private repo creds: `kubectl -n crq create secret docker-registry regcred --docker-server='https://index.docker.io/v1/' --docker-username='maroda' --docker-password='<REDACTED>' --docker-email='maroda@gmail.com'`
 4. Deploy backend: `kubectl -n crq apply -f back/bacque.yaml`
 5. Deploy frontend: `kubectl -n crq apply -f front/craque.yaml`
-6. Get DNS for LoadBalancer: 
-7. Apply DNS: `pushd tf && terraform apply -var 'simple_lb=<DNS_FOR_LB>' -auto-approve && popd`
+6. Get DNS for LoadBalancer: `export CLB=$(kubectl -n crq get svc craque -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')`
+7. Apply DNS: `pushd tf && terraform apply -var "simple_lb=$CLB" -auto-approve && popd`
 
 The last step requires AWS auth and a DNS zone already configured.
 

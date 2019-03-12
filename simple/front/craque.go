@@ -5,7 +5,7 @@
 	/ - Hello
 	/dt - retrieves the datetime from Bacque
 	/ping - a readiness check
-	/m - prometheus metrics
+	/metrics - prometheus metrics
 
 	Version = Cv004
 
@@ -134,8 +134,8 @@ func main() {
 	// ping ::: readiness check that returns 'pong'
 	http.HandleFunc("/ping", ping)
 
-	// m ::: prometheus metrics endpoint (can this be logged?)
-	http.Handle("/m", promhttp.Handler())
+	// metrics ::: prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
 
 	// start server
 	if err := http.ListenAndServe(":8888", nil); err != nil {
