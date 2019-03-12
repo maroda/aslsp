@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: bacque-front
-        image: maroda/craque:Bv005
+        image: maroda/craque:Bv006
         ports:
           - containerPort: 9999
         readinessProbe:

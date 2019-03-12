@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: craque-front
-        image: maroda/craque:Cv004
+        image: maroda/craque:Cv005
         env:
         - name: BACQUE
           value: "http://bacque/fetch"

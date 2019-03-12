@@ -10,7 +10,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv005
+	Version = Bv006
 
 */
 
