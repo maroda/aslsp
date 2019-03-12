@@ -7,7 +7,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv004
+	Version = Cv005
 
 */
 
@@ -20,7 +20,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/netdata/statsd"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -97,15 +96,6 @@ func dt(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// statsd setup, local to main for now
-	statsW, err := statsd.UDP(":8125")
-	if err != nil {
-		panic(err)
-	}
-
-	statsD := statsd.NewClient(statsW, "prefix.")
-	statsD.FlushEvery(5 * time.Second)
-
 	// enable metrics for each endpoint
 	prometheus.MustRegister(dtCount)
 	prometheus.MustRegister(rootCount)
@@ -115,7 +105,6 @@ func main() {
 	// if there is no valid endpoint, it will always default here
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		rootCount.Add(1)
-		statsD.Count("craque_root_statd", 1)
 		fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
 		zerolog.TimeFieldFormat = ""
 		log.Info().
