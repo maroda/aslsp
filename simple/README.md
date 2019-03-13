@@ -20,18 +20,23 @@ docker push docker.io/maroda/craque:Bv0XX
 ```
 
 ## ARM
-For running on Raspberry Pi 3
+
+For running on Raspberry Pi 3 as a binary:
 ```
 GOARCH=arm GOARM=7 GOOS=linux go build -o craque-arm front/
 GOARCH=arm GOARM=7 GOOS=linux go build -o bacque-arm back/
 ```
 
 ## Operation
+
 The app **front/craque** requires the environment variable `BACQUE` be set to the endpoint serving **back/bacque**.
 
-In kubernetes (front.craque.yaml) this is set to `"http://bacque/fetch"`.
-
-Running the go app directly, use `export BACQUE="http://localhost:9999/fetch"`.
+* In kubernetes (front.craque.yaml) this is set to `"http://bacque/fetch"`.
+* Running the go app directly, use `export BACQUE="http://localhost:9999/fetch"`.
+* With raw docker:
+  * Start **bacque** first: `docker run --rm --name bacque -p 9999:9999 craque:Bv006`
+  * Get the IP: `>>> export BCQ="http://$(docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bacque):9999"`
+  * Start **craque**: `docker run -e BACQUE=$BCQ --name craque -p 8888:8888 craque:Cv005`
 
 Once deployed, *craque* will access the *bacque* server to display some dynamically retrieved data, including a datetime stamp.
 Hitting [http://app.craq.io/dt]() will return something like this:
@@ -45,6 +50,7 @@ LocalIP=192.168.142.193
 Going to any invalid endpoint (e.g.: `/`, `/foo`, `/pickles`) will simply return "Hello. `/<endpoint>`"
 
 ## Deploy to New Kubernetes Cluster
+
 1. Configure context: `export KUBECONFIG=<ABS_PATH_CONFIG>`
 2. Create the namespace: `kubectl apply -f cluster/craque-ns.yaml`
 3. Add docker registry private repo creds: `kubectl -n crq create secret docker-registry regcred --docker-server='https://index.docker.io/v1/' --docker-username='maroda' --docker-password='<REDACTED>' --docker-email='maroda@gmail.com'`
