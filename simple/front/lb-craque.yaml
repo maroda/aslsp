@@ -1,30 +1,29 @@
 #
-# Simple Back-End using Istio
+# Simple Front-End using LoadBalancer
 #
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: bacque-v006
-  labels:
-    app: bacque
-    version: Bv006
+  name: craque
 spec:
   replicas: 3
   template:
     metadata:
       labels:
-        app: bacque
-        version: Bv006
+        app: craque
     spec:
       containers:
-      - name: bacque
-        image: maroda/craque:Bv006
+      - name: craque-front
+        image: maroda/craque:Cv005
+        env:
+        - name: BACQUE
+          value: "http://bacque/fetch"
         ports:
-          - containerPort: 9999
+          - containerPort: 8888
         readinessProbe:
           httpGet:
             path: /ping
-            port: 9999
+            port: 8888
           periodSeconds: 2
           initialDelaySeconds: 0
           failureThreshold: 3
@@ -35,13 +34,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: bacque
-  labels:
-    app: bacque
-    service: bacque
+  name: craque
 spec:
+  type: LoadBalancer
   selector:
-    app: bacque
+    app: craque
   ports:
-  - port: 9999
-    name: http
+  - protocol: TCP
+    port: 80
+    targetPort: 8888
