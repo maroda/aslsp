@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: bacque-gw
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: bacque
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - bacque-gw
+  http:
+  - match:
+    - uri:
+        exact: /fetch
+    route:
+    - destination:
+        host: bacque
+        port:
+          number: 9999
