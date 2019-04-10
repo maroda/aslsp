@@ -7,7 +7,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv005
+	Version = Cv006
 
 */
 
@@ -39,6 +39,11 @@ var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "craque_ping_total",
 	Help: "Total number of requests for Readiness /ping.",
 })
+var fetchDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
+	Name:    "craque_fetch_timer",
+	Help:    "Histogram for the runtime of each API call to /fetch",
+	Buckets: prometheus.LinearBuckets(0.01, 0.01, 10),
+})
 
 // readiness check
 func ping(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +62,12 @@ func ping(w http.ResponseWriter, r *http.Request) {
 
 // check the backend server for a datetimestamp
 func dt(w http.ResponseWriter, r *http.Request) {
+	// prometheus metrics
 	dtCount.Add(1)
+	dtTimer := prometheus.NewTimer(fetchDuration)
+	defer dtTimer.ObserveDuration()
+
+	// create client and run
 	url := os.Getenv("BACQUE")
 	craqueClient := http.Client{
 		Timeout: time.Second * 2,
@@ -100,6 +110,7 @@ func main() {
 	prometheus.MustRegister(dtCount)
 	prometheus.MustRegister(rootCount)
 	prometheus.MustRegister(pingCount)
+	prometheus.MustRegister(fetchDuration)
 
 	// print Hello and the request path
 	// if there is no valid endpoint, it will always default here
