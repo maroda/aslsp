@@ -7,7 +7,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv006
+	Version = Cv008
 
 */
 
@@ -40,9 +40,10 @@ var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Help: "Total number of requests for Readiness /ping.",
 })
 var fetchDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
-	Name:    "craque_fetch_timer",
-	Help:    "Histogram for the runtime of each API call to /fetch",
-	Buckets: prometheus.LinearBuckets(0.01, 0.01, 10),
+	Name: "craque_fetch_timer_seconds",
+	Help: "Histogram for the runtime of each remote call to /fetch",
+	// 50 Buckets, 10ms each, starting at 1ms
+	Buckets: prometheus.LinearBuckets(0.001, 0.01, 50),
 })
 
 // readiness check

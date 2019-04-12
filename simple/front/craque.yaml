@@ -4,21 +4,21 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: craque-v006
+  name: craque-v008
   labels:
     app: craque
-    version: Cv006
+    version: Cv008
 spec:
   replicas: 3
   template:
     metadata:
       labels:
         app: craque
-        version: Cv006
+        version: Cv008
     spec:
       containers:
       - name: craque
-        image: maroda/craque:Cv006
+        image: maroda/craque:Cv008
         env:
         - name: BACQUE
           value: "http://app.craq.io/fetch"

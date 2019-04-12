@@ -1,5 +1,5 @@
 FROM golang:1.11.5-alpine3.9
-LABEL version="006"
+LABEL version="008"
 LABEL vendor="Sounding"
 EXPOSE 9999
 WORKDIR /go/src/bacque/
