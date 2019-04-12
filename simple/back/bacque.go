@@ -10,7 +10,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv006
+	Version = Bv008
 
 */
 
@@ -41,11 +41,20 @@ var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "bacque_ping_total",
 	Help: "Total number of requests for Readiness /ping.",
 })
+var apiDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
+	Name: "bacque_api_timer_seconds",
+	Help: "Historgram for the total runtime of returning /fetch",
+	// 50 Buckets, 10ms each, starting at 1ms
+	Buckets: prometheus.LinearBuckets(0.001, 0.01, 50),
+})
 
 // API call that returns local system datetime
 func fetch(w http.ResponseWriter, r *http.Request) {
 	// access a local command and return its output
 	fetchCount.Add(1)
+	dtTimer := prometheus.NewTimer(apiDuration)
+	defer dtTimer.ObserveDuration()
+
 	arg := "+%Y%m%d%H%S"
 	app := "date"
 	stdout, err := exec.Command(app, arg).Output()
@@ -117,6 +126,7 @@ func main() {
 	prometheus.MustRegister(fetchCount)
 	prometheus.MustRegister(rootCount)
 	prometheus.MustRegister(pingCount)
+	prometheus.MustRegister(apiDuration)
 
 	// print Hello and the request path
 	// if there is no valid endpoint, it will always default here

@@ -4,21 +4,21 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: bacque-v006
+  name: bacque-v008
   labels:
     app: bacque
-    version: Bv006
+    version: Bv008
 spec:
   replicas: 3
   template:
     metadata:
       labels:
         app: bacque
-        version: Bv006
+        version: Bv008
     spec:
       containers:
       - name: bacque
-        image: maroda/craque:Bv006
+        image: maroda/craque:Bv008
         ports:
           - containerPort: 9999
         readinessProbe:
