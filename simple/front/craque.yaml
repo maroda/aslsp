@@ -4,21 +4,24 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: craque-v008
+  name: craque-v009
   labels:
     app: craque
-    version: Cv008
+    version: Cv009
 spec:
   replicas: 3
   template:
     metadata:
+      annotations:
+        sumologic.com/kubernetes_meta_reduce: "true"
+        sumologic.com/include: "true"
       labels:
         app: craque
-        version: Cv008
+        version: Cv009
     spec:
       containers:
       - name: craque
-        image: maroda/craque:Cv008
+        image: maroda/craque:Cv009
         env:
         - name: BACQUE
           value: "http://app.craq.io/fetch"

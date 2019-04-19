@@ -7,7 +7,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv008
+	Version = Cv009
 
 */
 
@@ -55,6 +55,7 @@ func ping(w http.ResponseWriter, r *http.Request) {
 		Str("host", r.Host).
 		Str("ref", r.RemoteAddr).
 		Str("xref", r.Header.Get("X-Forwarded-For")).
+		Str("method", r.Method).
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
@@ -95,19 +96,22 @@ func dt(w http.ResponseWriter, r *http.Request) {
 		Str("host", r.Host).
 		Str("ref", r.RemoteAddr).
 		Str("xref", r.Header.Get("X-Forwarded-For")).
+		Str("method", r.Method).
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
 		Msg("")
 	// log access to backend
+	/*		currently disabled
 	log.Info().
 		Str("url", url).
 		Str("status", res.Status).
 		Msg("")
+	*/
 }
 
 func main() {
-	// enable metrics for each endpoint
+	// Prometheus outputs
 	prometheus.MustRegister(dtCount)
 	prometheus.MustRegister(rootCount)
 	prometheus.MustRegister(pingCount)
@@ -115,19 +119,24 @@ func main() {
 
 	// print Hello and the request path
 	// if there is no valid endpoint, it will always default here
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		rootCount.Add(1)
-		fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
-		zerolog.TimeFieldFormat = ""
-		log.Info().
-			Str("host", r.Host).
-			Str("ref", r.RemoteAddr).
-			Str("xref", r.Header.Get("X-Forwarded-For")).
-			Str("path", r.URL.Path).
-			Str("proto", r.Proto).
-			Str("agent", r.Header.Get("User-Agent")).
-			Msg("")
-	})
+	/*
+			disabled, not yet used
+
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			rootCount.Add(1)
+			fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
+			zerolog.TimeFieldFormat = ""
+			log.Info().
+				Str("host", r.Host).
+				Str("ref", r.RemoteAddr).
+				Str("xref", r.Header.Get("X-Forwarded-For")).
+				Str("method", r.Method).
+				Str("path", r.URL.Path).
+				Str("proto", r.Proto).
+				Str("agent", r.Header.Get("User-Agent")).
+				Msg("")
+		})
+	*/
 
 	// dt ::: gets the datetime from a remote service
 	http.HandleFunc("/dt", dt)
