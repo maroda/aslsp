@@ -4,21 +4,24 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: bacque-v008
+  name: bacque-v009
   labels:
     app: bacque
-    version: Bv008
+    version: Bv009
 spec:
   replicas: 3
   template:
     metadata:
+      annotations:
+        sumologic.com/kubernetes_meta_reduce: "true"
+        sumologic.com/include: "true"
       labels:
         app: bacque
-        version: Bv008
+        version: Bv009
     spec:
       containers:
       - name: bacque
-        image: maroda/craque:Bv008
+        image: maroda/craque:Bv009
         ports:
           - containerPort: 9999
         readinessProbe:

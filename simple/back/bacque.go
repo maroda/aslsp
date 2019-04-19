@@ -10,7 +10,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv008
+	Version = Bv009
 
 */
 
@@ -101,6 +101,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 		Str("host", r.Host).
 		Str("ref", r.RemoteAddr).
 		Str("xref", r.Header.Get("X-Forwarded-For")).
+		Str("method", r.Method).
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
@@ -116,6 +117,7 @@ func ping(w http.ResponseWriter, r *http.Request) {
 		Str("host", r.Host).
 		Str("ref", r.RemoteAddr).
 		Str("xref", r.Header.Get("X-Forwarded-For")).
+		Str("method", r.Method).
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
@@ -123,26 +125,13 @@ func ping(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Prometheus outputs
 	prometheus.MustRegister(fetchCount)
 	prometheus.MustRegister(rootCount)
 	prometheus.MustRegister(pingCount)
 	prometheus.MustRegister(apiDuration)
 
-	// print Hello and the request path
-	// if there is no valid endpoint, it will always default here
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		rootCount.Add(1)
-		fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
-		zerolog.TimeFieldFormat = ""
-		log.Info().
-			Str("host", r.Host).
-			Str("ref", r.RemoteAddr).
-			Str("xref", r.Header.Get("X-Forwarded-For")).
-			Str("path", r.URL.Path).
-			Str("proto", r.Proto).
-			Str("agent", r.Header.Get("User-Agent")).
-			Msg("")
-	})
+	// Bacque does not serve anything at the root (/)
 
 	// fetch local command output
 	http.HandleFunc("/fetch", fetch)
