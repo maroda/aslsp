@@ -4,10 +4,10 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: craque-v009
+  name: craque-v010
   labels:
     app: craque
-    version: Cv009
+    version: Cv010
 spec:
   replicas: 3
   template:
@@ -17,14 +17,19 @@ spec:
         sumologic.com/include: "true"
       labels:
         app: craque
-        version: Cv009
+        version: Cv010
     spec:
       containers:
       - name: craque
-        image: maroda/craque:Cv009
+        image: maroda/craque:Cv010
         env:
         - name: BACQUE
-          value: "http://app.craq.io/fetch"
+          # using this istio/mesh served version of bacque *will not expose errors*
+          # value: "http://app.craq.io/fetch"
+          #
+          # instead, use the Kube provided DNS/LB + port
+          # this will let app=craque throw the 400 error when bacque is not there
+          value: "http://bacque:9999/fetch"
         ports:
           - containerPort: 8888
         readinessProbe:

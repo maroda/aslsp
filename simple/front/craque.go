@@ -7,7 +7,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv009
+	Version = Cv010
 
 */
 
@@ -77,16 +77,27 @@ func dt(w http.ResponseWriter, r *http.Request) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Fatal()
+		return
 	}
 	req.Header.Set("User-Agent", "craquego")
 
-	res, getErr := craqueClient.Do(req)
-	if getErr != nil {
+	res, err := craqueClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, http.StatusText(418), 418)
 		log.Fatal()
+		return // this is required with zerolog, as log.Fatal() doesn't call os.Exit() in zerolog (apparently)
 	}
-	body, readErr := ioutil.ReadAll(res.Body)
-	if readErr != nil {
+	// don't waste resources
+	defer res.Body.Close()
+
+	// TODO: status code should probably be checked to move on
+	// fmt.Printf("StatusCode: %d: %q", res.StatusCode, res.Request.URL) // debug
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
 		log.Fatal()
+		return
 	}
 	fmt.Fprintf(w, "%s", body)
 
@@ -150,5 +161,6 @@ func main() {
 	// start server
 	if err := http.ListenAndServe(":8888", nil); err != nil {
 		log.Fatal().Err(err).Msg("startup failed!")
+		return
 	}
 }

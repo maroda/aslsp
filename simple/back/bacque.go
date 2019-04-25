@@ -10,7 +10,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv009
+	Version = Bv010
 
 */
 
@@ -60,6 +60,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	stdout, err := exec.Command(app, arg).Output()
 	if err != nil {
 		log.Fatal()
+		return
 	}
 
 	fmt.Fprintf(w, "DateTime=%s", stdout)
@@ -68,11 +69,13 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	rHost, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		log.Fatal()
+		return
 	}
 
 	userIP := net.ParseIP(rHost)
 	if userIP == nil {
 		log.Fatal()
+		return
 	}
 
 	// display request IP
@@ -83,6 +86,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	conn, err := net.Dial("udp", extAddr)
 	if err != nil {
 		log.Fatal()
+		return
 	}
 	defer conn.Close()
 
@@ -91,6 +95,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	lHost, _, err := net.SplitHostPort(localAddr.String())
 	if err != nil {
 		log.Fatal()
+		return
 	}
 
 	// display local IP
@@ -145,5 +150,6 @@ func main() {
 	// start server
 	if err := http.ListenAndServe(":9999", nil); err != nil {
 		log.Fatal().Err(err).Msg("startup failed!")
+		return
 	}
 }
