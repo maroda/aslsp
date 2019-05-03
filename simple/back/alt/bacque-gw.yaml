@@ -1,3 +1,4 @@
+# this gw/virtualsvc may not be necessary
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:

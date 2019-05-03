@@ -7,7 +7,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv009
+	Version = Cv011
 
 */
 
@@ -59,6 +59,7 @@ func ping(w http.ResponseWriter, r *http.Request) {
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
 		Msg("")
 }
 
@@ -68,6 +69,8 @@ func dt(w http.ResponseWriter, r *http.Request) {
 	dtCount.Add(1)
 	dtTimer := prometheus.NewTimer(fetchDuration)
 	defer dtTimer.ObserveDuration()
+
+	zerolog.TimeFieldFormat = ""
 
 	// create client and run
 	url := os.Getenv("BACQUE")
@@ -80,17 +83,36 @@ func dt(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Header.Set("User-Agent", "craquego")
 
-	res, getErr := craqueClient.Do(req)
-	if getErr != nil {
-		log.Fatal()
+	res, err := craqueClient.Do(req)
+	if err != nil {
+		http.Error(w, http.StatusText(418), 418)
+		// log service not reachable
+		log.Error().
+			Str("host", r.Host).
+			Str("ref", r.RemoteAddr).
+			Str("xref", r.Header.Get("X-Forwarded-For")).
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Str("proto", r.Proto).
+			Str("agent", r.Header.Get("User-Agent")).
+			Str("response", "418").
+			Err(err).
+			Msg("")
+			// Msgf("Cannot reach %s", url)
+		return
 	}
-	body, readErr := ioutil.ReadAll(res.Body)
-	if readErr != nil {
+	// don't waste resources
+	defer res.Body.Close()
+
+	// TODO: status code should probably be checked to move on
+	// fmt.Printf("StatusCode: %d: %q", res.StatusCode, res.Request.URL) // debug
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
 		log.Fatal()
 	}
 	fmt.Fprintf(w, "%s", body)
 
-	zerolog.TimeFieldFormat = ""
 	// log frontend access
 	log.Info().
 		Str("host", r.Host).
@@ -100,14 +122,8 @@ func dt(w http.ResponseWriter, r *http.Request) {
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
 		Msg("")
-	// log access to backend
-	/*		currently disabled
-	log.Info().
-		Str("url", url).
-		Str("status", res.Status).
-		Msg("")
-	*/
 }
 
 func main() {
@@ -117,26 +133,7 @@ func main() {
 	prometheus.MustRegister(pingCount)
 	prometheus.MustRegister(fetchDuration)
 
-	// print Hello and the request path
-	// if there is no valid endpoint, it will always default here
-	/*
-			disabled, not yet used
-
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			rootCount.Add(1)
-			fmt.Fprintf(w, "Hello. %s\n", r.URL.Path)
-			zerolog.TimeFieldFormat = ""
-			log.Info().
-				Str("host", r.Host).
-				Str("ref", r.RemoteAddr).
-				Str("xref", r.Header.Get("X-Forwarded-For")).
-				Str("method", r.Method).
-				Str("path", r.URL.Path).
-				Str("proto", r.Proto).
-				Str("agent", r.Header.Get("User-Agent")).
-				Msg("")
-		})
-	*/
+	// Craque does not serve anything at the root (/)
 
 	// dt ::: gets the datetime from a remote service
 	http.HandleFunc("/dt", dt)

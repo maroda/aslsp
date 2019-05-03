@@ -10,7 +10,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv009
+	Version = Bv011
 
 */
 
@@ -105,6 +105,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
 		Msg("")
 }
 
@@ -121,6 +122,7 @@ func ping(w http.ResponseWriter, r *http.Request) {
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
 		Msg("")
 }
 
@@ -133,7 +135,7 @@ func main() {
 
 	// Bacque does not serve anything at the root (/)
 
-	// fetch local command output
+	// fetch ::: retrieive data for remote call
 	http.HandleFunc("/fetch", fetch)
 
 	// ping ::: readiness check that returns 'pong'
