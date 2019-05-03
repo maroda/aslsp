@@ -10,7 +10,7 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv010
+	Version = Bv011
 
 */
 
@@ -60,7 +60,6 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	stdout, err := exec.Command(app, arg).Output()
 	if err != nil {
 		log.Fatal()
-		return
 	}
 
 	fmt.Fprintf(w, "DateTime=%s", stdout)
@@ -69,13 +68,11 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	rHost, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		log.Fatal()
-		return
 	}
 
 	userIP := net.ParseIP(rHost)
 	if userIP == nil {
 		log.Fatal()
-		return
 	}
 
 	// display request IP
@@ -86,7 +83,6 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	conn, err := net.Dial("udp", extAddr)
 	if err != nil {
 		log.Fatal()
-		return
 	}
 	defer conn.Close()
 
@@ -95,7 +91,6 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	lHost, _, err := net.SplitHostPort(localAddr.String())
 	if err != nil {
 		log.Fatal()
-		return
 	}
 
 	// display local IP
@@ -110,6 +105,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
 		Msg("")
 }
 
@@ -126,6 +122,7 @@ func ping(w http.ResponseWriter, r *http.Request) {
 		Str("path", r.URL.Path).
 		Str("proto", r.Proto).
 		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
 		Msg("")
 }
 
@@ -138,7 +135,7 @@ func main() {
 
 	// Bacque does not serve anything at the root (/)
 
-	// fetch local command output
+	// fetch ::: retrieive data for remote call
 	http.HandleFunc("/fetch", fetch)
 
 	// ping ::: readiness check that returns 'pong'
@@ -150,6 +147,5 @@ func main() {
 	// start server
 	if err := http.ListenAndServe(":9999", nil); err != nil {
 		log.Fatal().Err(err).Msg("startup failed!")
-		return
 	}
 }

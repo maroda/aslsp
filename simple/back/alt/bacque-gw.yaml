@@ -1,8 +1,4 @@
 # this gw/virtualsvc may not be necessary
-# craque will only throw 400 errors if bacque is *not* served through the mesh
-# this also means that traffic headed to bacque won't show up in the prometheus viz?
-# maybe?
-# ???
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
