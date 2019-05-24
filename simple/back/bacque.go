@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -96,6 +98,44 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	// display local IP
 	fmt.Fprintf(w, "LocalIP=%s\n", lHost)
 
+	// send event to Kafka (if enabled)
+	featK := os.Getenv("BACQUE_KAFKA")
+	// just needs to be something to enable
+	if featK == "on" {
+		broker := os.Getenv("BACQUE_KAFKA_BROKER")
+		topic := os.Getenv("BACQUE_KAFKA_TOPIC")
+
+		p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": broker})
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to create producer!")
+			return
+		}
+
+		// fmt.Printf("Created Producer %v\n", p)
+		log.Info().Msg("Created producer")
+
+		deliveryChan := make(chan kafka.Event)
+
+		err = p.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+			Value:          []byte("Request=" + rHost + " Local=" + lHost),
+			Headers:        []kafka.Header{{Key: "Request", Value: []byte("something interesting")}},
+		}, deliveryChan)
+
+		e := <-deliveryChan
+		m := e.(*kafka.Message)
+
+		if m.TopicPartition.Error != nil {
+			log.Error().Err(err).Msg("Delivery failed")
+		} else {
+			log.Info().
+				Str("topic", *m.TopicPartition.Topic).
+				Msg("Message delivered")
+		}
+
+		close(deliveryChan)
+	}
+
 	zerolog.TimeFieldFormat = ""
 	log.Info().
 		Str("host", r.Host).
@@ -108,6 +148,10 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 		Str("response", "200").
 		Msg("")
 }
+
+// TODO: kafka producer function
+//func kafka() {
+//}
 
 // readiness check
 func ping(w http.ResponseWriter, r *http.Request) {
