@@ -2,7 +2,6 @@
 
 	Bacque
 
-	/ - Hello
 	/fetch - returns three 'dynamic' actions:
 			- retrieves local timestamp from the container OS
 			- displays the client Request IP address
@@ -10,7 +9,13 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv011
+	Version = Bv012
+
+	Environment Variables
+
+	BACQUE_KAFKA = set to 'on' if kafka output is desired
+	BACQUE_KAFKA_BROKER = broker address
+	BACQUE_KAFKA_TOPIC = topic name
 
 */
 
@@ -111,7 +116,6 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// fmt.Printf("Created Producer %v\n", p)
 		log.Info().Msg("Created producer")
 
 		deliveryChan := make(chan kafka.Event)
