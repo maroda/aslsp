@@ -52,7 +52,14 @@ func consumeK() {
 		for _, n := range os.Getenv("BACQUE_KAFKA_TOPIC") {
 			topics = append(topics, string(n))
 		}
-		log.Info().Str("topics", topics[0])
+		// the following shows that this slice is correct
+		// so something is wrong with how it's being used
+		// fmt.Printf("%#v\n", topics)
+		// []string{"c", "r", "a", "q", "K", "T"}
+		//
+		// the fix here may be to run this with a commandline arg
+		// and duplicate *exactly* how the barebones example works
+		// maybe that will clue me into what's fucked
 
 		c, err := kafka.NewConsumer(&kafka.ConfigMap{
 			"bootstrap.servers":     broker,
@@ -67,35 +74,34 @@ func consumeK() {
 
 		log.Info().Msg("Created consumer")
 
+		// need to look into this to see why it's puking on my slice
+		// it expects a []string but i'm not seeing it working
 		err = c.SubscribeTopics(topics, nil)
 
 		run := true
 
 		for run == true {
-			select {
+			ev := c.Poll(100)
+			if ev == nil {
+				// log.Debug().Msg("ev is nil")
+				continue
+			}
+
+			// the confluent lib is receiving my slice
+			// as if it were individual elements
+			// instead of a concatenated slice
+
+			switch e := ev.(type) {
+			case *kafka.Message:
+				log.Info().
+					Str("Value", string(e.Value)).
+					Msg("")
+			case kafka.Error:
+				log.Info().
+					Str("error", string(e.Code())).
+					Msg("Broker Error")
 			default:
-				ev := c.Poll(100)
-				if ev == nil {
-					// log.Debug().Msg("ev is nil")
-					continue
-				}
-
-				// either the topic is wrong
-				// or the consumer isn't working
-				// because it's not getting this far
-
-				switch e := ev.(type) {
-				case *kafka.Message:
-					log.Info().
-						Str("Value", string(e.Value)).
-						Msg("")
-				case kafka.Error:
-					log.Info().
-						Str("error", string(e.Code())).
-						Msg("Broker Error")
-				default:
-					log.Warn().Msg("Ignored event")
-				}
+				log.Warn().Msg("Ignored event")
 			}
 		}
 
