@@ -1,23 +1,30 @@
 #
-# Simple Front-End using LoadBalancer
+# Simple Front-End using LoadBalancer #
 #
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: craque
+  name: craque-v012
+  labels:
+    app: craque
+    version: Cv012
 spec:
   replicas: 3
   template:
     metadata:
+      annotations:
+        sumologic.com/kubernetes_meta_reduce: "true"
+        sumologic.com/include: "true"
       labels:
         app: craque
+        version: Cv012
     spec:
       containers:
-      - name: craque-front
-        image: maroda/craque:Cv005
+      - name: craque
+        image: maroda/craque:Cv012
         env:
         - name: BACQUE
-          value: "http://bacque/fetch"
+          value: "http://bacque:9999/fetch"
         ports:
           - containerPort: 8888
         readinessProbe:
@@ -34,7 +41,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    prometheus.io/port: "8888"
+    prometheus.io/scheme: http
+    prometheus.io/scrape: "true"
   name: craque
+  labels:
+    app: craque
+    service: craque
 spec:
   type: LoadBalancer
   selector:
