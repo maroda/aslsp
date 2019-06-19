@@ -31,7 +31,7 @@ GOARCH=arm GOARM=7 GOOS=linux go build -o bacque-arm back/
 
 The app **front/craque** requires the environment variable `BACQUE` be set to the endpoint serving **back/bacque**.
 
-* In kubernetes (front.craque.yaml) this is set to `"http://bacque/fetch"`.
+* In kubernetes (front.craque.yaml) this is usually `"http://bacque:9999/fetch"`.
 * Running the go app directly, use `export BACQUE="http://localhost:9999/fetch"`.
 * With raw docker:
   * Start **bacque** first: `docker run --rm --name bacque -p 9999:9999 craque:Bv006`
@@ -47,7 +47,7 @@ RequestIP=192.168.192.65
 LocalIP=192.168.142.193
 ```
 
-Going to any invalid endpoint (e.g.: `/`, `/foo`, `/pickles`) will simply return "Hello. `/<endpoint>`"
+As of version Cv012, Craque will fall back to a local retrieval of DateTime if the endpoint set with BACQUE is unavailable (and returns with response code 418). It does *not* return the same "enriched sender/receiver IP data" that BACQUE does.
 
 ## Deploy to New Kubernetes Cluster (LoadBalancer service)
 
@@ -63,12 +63,11 @@ The last step requires AWS auth and a DNS zone already configured.
 
 ## Deploy to New Kubernetes Cluster (Istio)
 
-Similar to LB, except different configs are required.
+Similar to LB, except different configs are required. In this mode, Bacque does not have external access.
 
-1. Deploy backend ingress gw: `kubectl -n crq apply -f back/bacque-gw.yaml`
-2. Deploy backend: `kubectl -n crq apply -f back/bacque.yaml`
-3. Deploy frontend ingress gw: `kubectl -n crq apply -f front/craque-gw.yaml`
-4. Deploy frontend: `kubectl -n crq apply -f front/craque.yaml`
+1. Deploy backend: `kubectl -n crq apply -f back/bacque.yaml`
+2. Deploy frontend ingress gw: `kubectl -n crq apply -f front/craque-gw.yaml`
+3. Deploy frontend: `kubectl -n crq apply -f front/craque.yaml`
 
 ## Issues
 

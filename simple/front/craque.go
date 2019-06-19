@@ -2,12 +2,19 @@
 
 	Craque
 
-	/ - Hello
 	/dt - retrieves the datetime from Bacque
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Cv011
+	Requires BACQUE env var set, e.g. if bacque is running locally:
+		export BACQUE="http://localhost:9999/fetch"
+
+	If BACQUE isn't reachable, Craque will fall back to a local DateTime,
+	but without the same "enriched IP data" returned by BACQUE.
+
+	TODO: Add a prometheus metric that counts requests for dt but local
+
+	Version = Cv012
 
 */
 
@@ -18,6 +25,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,10 +38,6 @@ import (
 var dtCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "craque_dt_total",
 	Help: "Total number of requests for DateTime.",
-})
-var rootCount = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "craque_root_total",
-	Help: "Total number of requests for /.",
 })
 var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "craque_ping_total",
@@ -85,8 +89,20 @@ func dt(w http.ResponseWriter, r *http.Request) {
 
 	res, err := craqueClient.Do(req)
 	if err != nil {
+		// if BACQUE fails, fall back to a local timestamp only,
+		// not the enriched IP addresses that BACQUE returns.
 		http.Error(w, http.StatusText(418), 418)
-		// log service not reachable
+
+		arg := "+%Y%m%d%H%S"
+		app := "date"
+
+		dtloc, err := exec.Command(app, arg).Output()
+		if err != nil {
+			log.Fatal()
+		}
+		fmt.Fprintf(w, "DateTime=%s", dtloc)
+
+		// log service unresponsive
 		log.Error().
 			Str("host", r.Host).
 			Str("ref", r.RemoteAddr).
@@ -97,8 +113,7 @@ func dt(w http.ResponseWriter, r *http.Request) {
 			Str("agent", r.Header.Get("User-Agent")).
 			Str("response", "418").
 			Err(err).
-			Msg("")
-			// Msgf("Cannot reach %s", url)
+			Msg("service unresponsive local dt returned")
 		return
 	}
 	// don't waste resources
@@ -129,7 +144,6 @@ func dt(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// Prometheus outputs
 	prometheus.MustRegister(dtCount)
-	prometheus.MustRegister(rootCount)
 	prometheus.MustRegister(pingCount)
 	prometheus.MustRegister(fetchDuration)
 

@@ -4,10 +4,10 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: craque-v011
+  name: craque-v012
   labels:
     app: craque
-    version: Cv011
+    version: Cv012
 spec:
   replicas: 3
   template:
@@ -17,11 +17,11 @@ spec:
         sumologic.com/include: "true"
       labels:
         app: craque
-        version: Cv011
+        version: Cv012
     spec:
       containers:
       - name: craque
-        image: maroda/craque:Cv011
+        image: maroda/craque:Cv012
         env:
         - name: BACQUE
           value: "http://bacque:9999/fetch"
