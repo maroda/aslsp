@@ -11,6 +11,8 @@
 
 	Version = Bv012
 
+	NOTE: Bv012 is broken for containers, when building for containers the kafka stuff is commented out.
+
 	Environment Variables
 
 	BACQUE_KAFKA = set to 'on' if kafka output is desired
@@ -25,10 +27,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"os/exec"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	// "github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -39,10 +40,6 @@ import (
 var fetchCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "bacque_fetch_total",
 	Help: "Total number of requests for DateTime.",
-})
-var rootCount = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "bacque_root_total",
-	Help: "Total number of requests for /.",
 })
 var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "bacque_ping_total",
@@ -72,6 +69,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "DateTime=%s", stdout)
 
 	// grab just the IP of the requestor
+	// BUG: for some reason, this is now reporting 127.0.0.1 in istio?!
 	rHost, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		log.Fatal()
@@ -102,6 +100,8 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 
 	// display local IP
 	fmt.Fprintf(w, "LocalIP=%s\n", lHost)
+
+	/* KAFKA DISABLED FOR CONTAINER BUILD
 
 	// send event to Kafka (if enabled)
 	featK := os.Getenv("BACQUE_KAFKA")
@@ -139,6 +139,7 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 
 		close(deliveryChan)
 	}
+	*/
 
 	zerolog.TimeFieldFormat = ""
 	log.Info().
@@ -177,7 +178,6 @@ func ping(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// Prometheus outputs
 	prometheus.MustRegister(fetchCount)
-	prometheus.MustRegister(rootCount)
 	prometheus.MustRegister(pingCount)
 	prometheus.MustRegister(apiDuration)
 

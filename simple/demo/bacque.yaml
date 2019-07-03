@@ -1,5 +1,5 @@
 #
-# Simple Back-End using Istio
+# Simple Back-End using ClusterIP
 #
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -9,7 +9,7 @@ metadata:
     app: bacque
     version: Bv012
 spec:
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       annotations:
