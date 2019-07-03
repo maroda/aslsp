@@ -22,6 +22,13 @@ spec:
       containers:
       - name: craque
         image: maroda/craque:Cv012
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "200m"
+          limits:
+            memory: "64Mi"
+            cpu: "250m"
         env:
         - name: BACQUE
           value: "http://bacque:9999/fetch"
