@@ -9,7 +9,7 @@ metadata:
     app: bacque
     version: Bv012
 spec:
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       annotations:

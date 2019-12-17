@@ -9,7 +9,7 @@ metadata:
     app: craque
     version: Cv012
 spec:
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       annotations:
