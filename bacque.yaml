@@ -1,0 +1,75 @@
+---
+#
+# Back
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bacque
+  namespace: aslsp
+  labels:
+    app: bacque
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bacque
+  template:
+    metadata:
+      labels:
+        app: bacque
+        version: 0.2.0
+    spec:
+      containers:
+      - name: bacque
+        image: maroda/aslsp:0.2.0
+        ports:
+          - containerPort: 9999
+        args:
+          - "-nofetch"
+        env:
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_TRACE_AGENT_PORT
+          value: "8126"
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 9999
+          periodSeconds: 2
+          initialDelaySeconds: 0
+          failureThreshold: 3
+          successThreshold: 1
+        resources:
+          requests:
+            memory: "4Mi"
+            cpu: "125m"
+          limits:
+            memory: "8Mi"
+            cpu: "250m"
+---
+#
+# Back Service
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: bacque
+  namespace: aslsp
+  labels:
+    app: bacque
+    service: bacque
+  annotations:
+    prometheus.io/port: "9999"
+    prometheus.io/scheme: http
+    prometheus.io/scrape: "true"
+spec:
+  type: NodePort
+  selector:
+    app: bacque
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9999
