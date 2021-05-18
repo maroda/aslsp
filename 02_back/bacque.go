@@ -9,10 +9,6 @@
 	/ping - a readiness check
 	/metrics - prometheus metrics
 
-	Version = Bv012
-
-	NOTE: Bv012 is broken for containers, when building for containers the kafka stuff is commented out.
-
 	Environment Variables
 
 	BACQUE_KAFKA = set to 'on' if kafka output is desired
@@ -27,9 +23,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 
-	// "github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -101,8 +98,6 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 	// display local IP
 	fmt.Fprintf(w, "LocalIP=%s\n", lHost)
 
-	/* KAFKA DISABLED FOR CONTAINER BUILD
-
 	// send event to Kafka (if enabled)
 	featK := os.Getenv("BACQUE_KAFKA")
 	// just needs to be something to enable
@@ -139,7 +134,6 @@ func fetch(w http.ResponseWriter, r *http.Request) {
 
 		close(deliveryChan)
 	}
-	*/
 
 	zerolog.TimeFieldFormat = ""
 	log.Info().
