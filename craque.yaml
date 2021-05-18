@@ -18,11 +18,11 @@ spec:
     metadata:
       labels:
         app: craque
-        version: 0.2.0
+        version: 0.2.1
     spec:
       containers:
       - name: craque
-        image: maroda/aslsp:0.2.0
+        image: maroda/aslsp:0.2.1
         ports:
           - containerPort: 8888
         env:
@@ -34,6 +34,12 @@ spec:
               fieldPath: status.hostIP
         - name: DD_TRACE_AGENT_PORT
           value: "8126"
+        - name: DD_ENV
+          value: "test"
+        - name: DD_SERVICE
+          value: "craque"
+        - name: DD_VERSION
+          value: "0.2.1"
         readinessProbe:
           httpGet:
             path: /ping
