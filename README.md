@@ -64,13 +64,3 @@ As of version Cv012, Craque will fall back to a local retrieval of DateTime if t
 
 The last step requires AWS auth and a DNS zone already configured.
 
-## Deploy to New Kubernetes Cluster (Istio)
-
-Similar to LB, except different configs are required. In this mode, Bacque does not have external access so it gets no gateway. Everything under the `istio/` directory is implied here.
-
-## Issues
-
-Only with the LoadBalancer service, I've noticed that upon first launch, *craque* does not immediately return a value when `/dt` is called. In a graphical browser, it will hang for a bit, but then eventually return the datetime. If the first run is with curl, the timeout seems shorter, and will throw the error **curl: (52) Empty reply from server**. This looks potentially related to a delay from the *bacque* endpoint `/fetch` because it seemed to happen multiple times, but never more times than there are replicas of *bacque*. Hypothesis is that once the `/fetch` endpoint on each pod is accessed and whatever lag/delay happens, it never has another delay and returns things normally.
-
-This issue doesn't seem to ever happen with the Istio installation.
-
