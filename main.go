@@ -14,20 +14,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
-	// datadog tracer is recommended to be placed around your main function.
-	// These env settings are *maybe* overwritten by what's in the template yaml.
-	// Doing a test to find out... these defaults will be overwritten by real values.
-	tracer.Start(
-		tracer.WithEnv("proto"),            // DD_ENV
-		tracer.WithService("aslsp"),        // DD_SERVICE
-		tracer.WithServiceVersion("0.0.0"), // DD_VERSION
-	)
-	defer tracer.Stop() // When stopped, the tracer flushes contents to the Agent.
-
 	// Prometheus outputs
 	prometheus.MustRegister(CFetchCount)
 	prometheus.MustRegister(pingCount)
