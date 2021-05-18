@@ -1,75 +1,8 @@
+---
 #
 # Namespace
 #
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: crq
----
-#
-# Back
-#
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: aslsp
-  namespace: crq
-  labels:
-    app: aslsp
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: aslsp
-  template:
-    metadata:
-      labels:
-        app: aslsp
-        version: 0.2.0
-    spec:
-      containers:
-      - name: aslsp
-        image: maroda/aslsp:0.2.0
-        ports:
-          - containerPort: 9999
-        args:
-          - "-nofetch"
-        env:
-        - name: DD_AGENT_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
-        - name: DD_TRACE_AGENT_PORT
-          value: "8126"
-        readinessProbe:
-          httpGet:
-            path: /ping
-            port: 9999
-          periodSeconds: 2
-          initialDelaySeconds: 0
-          failureThreshold: 3
-          successThreshold: 1
-        resources:
-          requests:
-            memory: "4Mi"
-            cpu: "125m"
-          limits:
-            memory: "8Mi"
-            cpu: "250m"
----
-#
-# Back Service
-#
-apiVersion: v1
-kind: Service
-metadata:
-  name: bacque
-  namespace: crq
-spec:
-  type: NodePort
-  selector:
-    app: bacque
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 9999
