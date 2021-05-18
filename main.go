@@ -16,22 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// define prometheus metrics
-var CFetchCount = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "CFetch_total",
-	Help: "Total number of requests for DateTime.",
-})
-var pingCount = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "ping_total",
-	Help: "Total number of requests for Readiness /ping.",
-})
-var apiDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
-	Name: "CFetch_api_timer_seconds",
-	Help: "Historgram for the total runtime of returning CFetch",
-	// 50 Buckets, 10ms each, starting at 1ms
-	Buckets: prometheus.LinearBuckets(0.001, 0.01, 50),
-})
-
 func main() {
 	// Prometheus outputs
 	prometheus.MustRegister(CFetchCount)
@@ -56,35 +40,30 @@ func main() {
 		log.Info().Msg("Log level set to DEBUG")
 	}
 
+	// ping ::: readiness check that returns 'pong'
+	http.HandleFunc("/ping", ping)
+
+	// metrics ::: prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
+
 	// Fetching from a data backend is default behavior, displaying it to the user on port 8888.
 	// The 'nofetch' flag turns this off, and this becomes the data backend to fetch from on port 9999.
+	//
 	if *nofetch {
 		log.Info().Msg("I am Bacque")
-		// fetch ::: retrieive data for remote call
+
+		// fetch ::: returns enriched date-time data to the client.
 		http.HandleFunc("/fetch", CFetch)
 
-		// ping ::: readiness check that returns 'pong'
-		http.HandleFunc("/ping", ping)
-
-		// metrics ::: prometheus metrics endpoint
-		http.Handle("/metrics", promhttp.Handler())
-
-		// start server
 		if err := http.ListenAndServe(":9999", nil); err != nil {
 			log.Fatal().Err(err).Msg("startup failed!")
 		}
 	} else {
 		log.Info().Msg("I am Craque")
-		// dt ::: gets the datetime from a remote service
+
+		// dt ::: returns a date-time of some form to the user.
 		http.HandleFunc("/dt", dt)
 
-		// ping ::: readiness check that returns 'pong'
-		http.HandleFunc("/ping", ping)
-
-		// metrics ::: prometheus metrics endpoint
-		http.Handle("/metrics", promhttp.Handler())
-
-		// start server
 		if err := http.ListenAndServe(":8888", nil); err != nil {
 			log.Fatal().Err(err).Msg("startup failed!")
 		}

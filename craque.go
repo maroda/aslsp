@@ -17,18 +17,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// define prometheus metrics
-var dtCount = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "craque_dt_total",
-	Help: "Total number of requests for DateTime.",
-})
-var CFetchDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
-	Name: "CFetch_timer_seconds",
-	Help: "Histogram for the runtime of each remote call to /fetch",
-	// 50 Buckets, 10ms each, starting at 1ms
-	Buckets: prometheus.LinearBuckets(0.001, 0.01, 50),
-})
-
 // check the backend server for a datetimestamp
 func dt(w http.ResponseWriter, r *http.Request) {
 	// prometheus metrics
@@ -38,7 +26,8 @@ func dt(w http.ResponseWriter, r *http.Request) {
 
 	zerolog.TimeFieldFormat = ""
 
-	// create client and run
+	// this value expects the full url,
+	// i.e.: http://localhost:9999/fetch
 	url := os.Getenv("BACQUE")
 	craqueClient := http.Client{
 		Timeout: time.Second * 2,
