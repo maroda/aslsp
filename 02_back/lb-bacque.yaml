@@ -1,20 +1,26 @@
 #
 # Simple Back-End Kube
 #
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bacque
+  labels:
+    app: bacque
 spec:
   replicas: 3
+  selector:
+    matchLabels:
+      app: bacque
   template:
     metadata:
       labels:
         app: bacque
+        version: Bv012
     spec:
       containers:
       - name: bacque-front
-        image: maroda/craque:Bv006
+        image: maroda/craque:Bv012
         ports:
           - containerPort: 9999
         readinessProbe:

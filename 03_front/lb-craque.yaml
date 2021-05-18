@@ -1,7 +1,7 @@
 #
 # Simple Front-End using LoadBalancer #
 #
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: craque-v012
@@ -10,11 +10,11 @@ metadata:
     version: Cv012
 spec:
   replicas: 3
+  selector:
+    matchLabels:
+      app: craque
   template:
     metadata:
-      annotations:
-        sumologic.com/kubernetes_meta_reduce: "true"
-        sumologic.com/include: "true"
       labels:
         app: craque
         version: Cv012
@@ -31,7 +31,11 @@ spec:
             cpu: "250m"
         env:
         - name: BACQUE
-          value: "http://bacque:9999/fetch"
+          value: "http://bacque/fetch"
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         ports:
           - containerPort: 8888
         readinessProbe:
