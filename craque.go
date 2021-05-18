@@ -15,11 +15,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // check the backend server for a datetimestamp
 func dt(w http.ResponseWriter, r *http.Request) {
-	// prometheus metrics
+	// These env settings are *maybe* overwritten by what's in the template yaml.
+	tracer.Start(
+		tracer.WithEnv("proto"),            // DD_ENV
+		tracer.WithService("aslsp"),        // DD_SERVICE
+		tracer.WithServiceVersion("0.0.0"), // DD_VERSION
+	)
+	defer tracer.Stop() // When stopped, the tracer flushes contents to the Agent.
+
+	// existing prometheus tracing
 	dtCount.Add(1)
 	dtTimer := prometheus.NewTimer(CFetchDuration)
 	defer dtTimer.ObserveDuration()

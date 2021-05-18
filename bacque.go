@@ -2,7 +2,8 @@
 
 	Bacque
 
-	/fetch - returns three 'dynamic' actions:
+	/fetch - returns three 'dynamic' actions
+			 that rely on several I/O subsystems:
 			- retrieves local timestamp from the container OS
 			- displays the client Request IP address
 			- reports Local IP based on default egress
@@ -22,15 +23,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // CFetch ::: API call that returns local system datetime
 func CFetch(w http.ResponseWriter, r *http.Request) {
-	// access a local command and return its output
+	// These env settings are *maybe* overwritten by what's in the template yaml.
+	tracer.Start(
+		tracer.WithEnv("proto"),            // DD_ENV
+		tracer.WithService("aslsp"),        // DD_SERVICE
+		tracer.WithServiceVersion("0.0.0"), // DD_VERSION
+	)
+	defer tracer.Stop() // When stopped, the tracer flushes contents to the Agent.
+
+	// existing prometheus tracing
 	CFetchCount.Add(1)
 	dtTimer := prometheus.NewTimer(apiDuration)
 	defer dtTimer.ObserveDuration()
 
+	// access a local command and return its output
 	arg := "+%Y%m%d%H%S"
 	app := "date"
 	stdout, err := exec.Command(app, arg).Output()
