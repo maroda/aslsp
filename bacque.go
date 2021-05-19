@@ -28,13 +28,22 @@ import (
 
 // CFetch ::: API call that returns local system datetime
 func CFetch(w http.ResponseWriter, r *http.Request) {
-	// These env settings are *maybe* overwritten by what's in the template yaml.
+	// DDog strongly recommends the ENV VARs are configured in the yaml,
+	// so they are put here as defaults to signal when they are not.
 	tracer.Start(
+		tracer.WithServiceName("aslsp"),
 		tracer.WithEnv("proto"),            // DD_ENV
-		tracer.WithService("aslsp"),        // DD_SERVICE
+		tracer.WithService("generic"),      // DD_SERVICE
 		tracer.WithServiceVersion("0.0.0"), // DD_VERSION
 	)
-	defer tracer.Stop() // When stopped, the tracer flushes contents to the Agent.
+	defer tracer.Stop() // The Agent flushes the data here.
+
+	span := tracer.StartSpan("web.request",
+		tracer.ResourceName("Bacque"),
+	)
+	defer span.Finish()
+
+	span.SetTag("http.url", r.URL.Path)
 
 	// existing prometheus tracing
 	CFetchCount.Add(1)
