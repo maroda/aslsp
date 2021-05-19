@@ -1,6 +1,6 @@
 FROM golang:alpine3.13
 LABEL app="aslsp"
-LABEL version="0.2.2"
+LABEL version="0.2.3"
 LABEL vendor="Sounding"
 EXPOSE 8888
 EXPOSE 9999
