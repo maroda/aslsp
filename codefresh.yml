@@ -1,0 +1,30 @@
+version: "1.0"
+
+stages:
+  - checkout
+  - package
+  - test
+steps:
+  main_clone:
+    title: Cloning main repository...
+    type: git-clone
+    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+    revision: '${{CF_REVISION}}'
+    stage: checkout
+  DockerImage:
+    title: Building Docker Image
+    type: build
+    stage: package
+    image_name: aslsp
+    working_directory: "${{clone}}"
+    tag: "${{CF_BRANCH_TAG_NORMALIZED}}"
+    #working_directory: ./
+    #tag: v0.2.3
+    dockerfile: Dockerfile
+    disable_push: true
+  UnitTests:
+    title: Running Unit tests
+    image: '${{DockerImage}}'
+    stage: test
+    commands:
+      - go test
