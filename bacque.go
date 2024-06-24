@@ -23,29 +23,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // CFetch ::: API call that returns local system datetime
 func CFetch(w http.ResponseWriter, r *http.Request) {
-	// DDog strongly recommends the ENV VARs are configured in the yaml,
-	// so they are put here as defaults to signal when they are not.
-	tracer.Start(
-		tracer.WithServiceName("aslsp"),
-		tracer.WithEnv("proto"),            // DD_ENV
-		tracer.WithService("generic"),      // DD_SERVICE
-		tracer.WithServiceVersion("0.0.0"), // DD_VERSION
-	)
-	defer tracer.Stop() // The Agent flushes the data here.
-
-	span := tracer.StartSpan("web.request",
-		tracer.ResourceName("Bacque"),
-	)
-	defer span.Finish()
-
-	span.SetTag("http.url", r.URL.Path)
-
-	// existing prometheus tracing
+	// prometheus tracing
 	CFetchCount.Add(1)
 	dtTimer := prometheus.NewTimer(apiDuration)
 	defer dtTimer.ObserveDuration()
