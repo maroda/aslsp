@@ -1,12 +1,11 @@
 module aslsp
 
-go 1.22.4
+go 1.22
 
 require (
-	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/prometheus/client_golang v1.19.1
 	github.com/rs/zerolog v1.33.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.65.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.65.1
 )
 
 require (

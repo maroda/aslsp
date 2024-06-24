@@ -6,7 +6,7 @@ stages:
   - test
 steps:
   main_clone:
-    title: Cloning main repository...
+    title: Cloning repository...
     type: git-clone
     repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
     revision: '${{CF_REVISION}}'
@@ -16,10 +16,8 @@ steps:
     type: build
     stage: package
     image_name: aslsp
-    working_directory: "${{clone}}"
+    working_directory: ./
     tag: "${{CF_BRANCH_TAG_NORMALIZED}}"
-    #working_directory: ./
-    #tag: v0.2.3
     dockerfile: Dockerfile
     disable_push: true
   UnitTests:
