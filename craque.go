@@ -29,12 +29,10 @@ func dt(w http.ResponseWriter, r *http.Request) {
 	// this value expects the full url,
 	// i.e.: http://localhost:9999/fetch
 	url := os.Getenv("BACQUE")
-	craqueClient := http.Client{
-		Timeout: time.Second * 2,
-	}
+	craqueClient := http.Client{Timeout: time.Second * 2}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatal()
+		log.Error().Err(err).Msg("Could not create request")
 	}
 	req.Header.Set("User-Agent", "craquego")
 
@@ -50,7 +48,10 @@ func dt(w http.ResponseWriter, r *http.Request) {
 		if lcerr != nil {
 			log.Fatal()
 		}
-		fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
+		_, err := fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
+		if err != nil {
+			log.Error().Err(err).Msg("Could not write output")
+		}
 
 		// log service unresponsive
 		log.Error().
@@ -66,17 +67,17 @@ func dt(w http.ResponseWriter, r *http.Request) {
 			Msg("service unresponsive local dt returned")
 		return
 	}
-	// don't waste resources
 	defer res.Body.Close()
-
-	// TODO: status code should probably be checked to move on
-	// fmt.Printf("StatusCode: %d: %q", res.StatusCode, res.Request.URL) // debug
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal()
+		log.Error().Err(err).Msg("Could not read response body")
 	}
-	fmt.Fprintf(w, "%s", body)
+
+	_, err = fmt.Fprintf(w, "%s", body)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not write output")
+	}
 
 	// log frontend access
 	log.Info().
