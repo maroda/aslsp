@@ -18,11 +18,11 @@ spec:
     metadata:
       labels:
         app: craque
-        version: 0.3.0
+        version: 0.3.3
     spec:
       containers:
       - name: craque
-        image: maroda/aslsp:0.3.0
+        image: maroda/aslsp:0.3.3
         ports:
           - containerPort: 8888
         env:

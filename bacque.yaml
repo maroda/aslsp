@@ -18,11 +18,11 @@ spec:
     metadata:
       labels:
         app: bacque
-        version: 0.3.0
+        version: 0.3.3
     spec:
       containers:
       - name: bacque
-        image: maroda/aslsp:0.3.0
+        image: maroda/aslsp:0.3.3
         ports:
           - containerPort: 9999
         args:

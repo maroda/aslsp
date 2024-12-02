@@ -1,28 +1,38 @@
-version: "1.0"
+version: '1.0'
 
 stages:
   - checkout
   - package
   - test
+  - publish
 steps:
   main_clone:
     title: Cloning repository...
     type: git-clone
-    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
-    revision: '${{CF_REVISION}}'
+    repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    revision: ${{CF_REVISION}}
     stage: checkout
   DockerImage:
     title: Building Docker Image
     type: build
     stage: package
-    image_name: aslsp
+    image_name: maroda/aslsp
     working_directory: ./
-    tag: "${{CF_BRANCH_TAG_NORMALIZED}}"
+    tag: ${{CF_BRANCH_TAG_NORMALIZED}}
     dockerfile: Dockerfile
     disable_push: true
   UnitTests:
     title: Running Unit tests
-    image: '${{DockerImage}}'
+    image: ${{DockerImage}}
     stage: test
     commands:
       - go test
+  PushImage:
+    title: Push Container to Harbor
+    type: push
+    stage: publish
+    candidate: ${{DockerImage}}
+    image_name: maroda/aslsp
+    tags:
+      - latest
+      - 0.3.3

@@ -5,11 +5,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,15 +43,14 @@ func dt(w http.ResponseWriter, r *http.Request) {
 		// if BACQUE fails, fall back to a local timestamp only,
 		// not the enriched IP addresses that BACQUE returns.
 		http.Error(w, http.StatusText(418), 418)
-
-		arg := "+%Y%m%d%H%S"
 		app := "date"
-
-		dtloc, err := exec.Command(app, arg).Output()
-		if err != nil {
+		arg := "+%Y%m%d%H%S"
+		lcB := bytes.Buffer{}
+		lcerr := LocalCMD(&lcB, app, arg)
+		if lcerr != nil {
 			log.Fatal()
 		}
-		fmt.Fprintf(w, "DateTime=%s", dtloc)
+		fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
 
 		// log service unresponsive
 		log.Error().
@@ -73,7 +72,7 @@ func dt(w http.ResponseWriter, r *http.Request) {
 	// TODO: status code should probably be checked to move on
 	// fmt.Printf("StatusCode: %d: %q", res.StatusCode, res.Request.URL) // debug
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal()
 	}
