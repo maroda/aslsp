@@ -2,7 +2,15 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+)
+
+// Used here for OS integration tests
+var (
+	localIP = "10.10.10.95"
 )
 
 // For mocking FindIP
@@ -11,29 +19,39 @@ type mockIPConfig struct {
 }
 
 func (ipc *mockIPConfig) EgressIP() (string, error) {
-	return "10.10.10.28", nil
+	return "10.10.10.95", nil
 }
 
 func TestFindIP(t *testing.T) {
-	mockIP := &mockIPConfig{ExtIPwPort: "0.0.0.0:0"}
-	want := "10.10.10.28"
-	got, err := FindIP(mockIP)
+	t.Run("Matches an IP", func(t *testing.T) {
+		mockIP := &mockIPConfig{ExtIPwPort: "0.0.0.0:0"}
+		got, err := FindIP(mockIP)
 
-	assertString(t, got, want)
-	assertError(t, err, nil)
+		assertString(t, got, localIP)
+		assertError(t, err, nil)
+	})
 }
 
+// Integration test: TCP/IP
 func TestEgIP(t *testing.T) {
-	e := "8.8.8.8:80"     // external address
-	want := "10.10.10.28" // known internal interface
-	got, err := EgIP(e)
+	t.Run("Retrieves the egress IP address", func(t *testing.T) {
+		e := "8.8.8.8:80" // external address
+		got, err := EgIP(e)
 
-	assertString(t, got, want)
-	assertError(t, err, nil)
+		assertString(t, got, localIP)
+		assertError(t, err, nil)
+	})
+
+	t.Run("Throws an error with no port given", func(t *testing.T) {
+		e := "8.8.8.8" // external address
+		_, err := EgIP(e)
+
+		assertGotError(t, err)
+	})
 }
 
+// TODO: This is problematic because of the 'jot' command
 func TestLocalCMD(t *testing.T) {
-
 	// Use LocalCMD to run a very simple shell command
 	// The 'jot' command is an old-school BSD command for creating lists.
 	// If tests fail because of this command not being present,
@@ -57,53 +75,74 @@ func TestLocalCMD(t *testing.T) {
 		assertString(t, got, want)
 		assertError(t, err, nil)
 	})
+}
 
-	/*
-		t.Run("fake date", func(t *testing.T) {
-			app := "date"
-			arg := "+%Y%m%d%H%M"
+// Integration test: Network
+func TestRequestIP(t *testing.T) {
+	t.Run("Returns the httptest IP", func(t *testing.T) {
+		// This is in the network created by httptest
+		want := "RequestIP=192.0.2.1\n"
 
-			buffer := bytes.Buffer{}
-			current := time.Now()
+		r := httptest.NewRequest(http.MethodGet, "/dt", nil)
+		w := httptest.NewRecorder()
+		err := RequestIP(w, r)
 
-			// Use Golang to get the time
-			timeS, werr := fmt.Printf("%d%02d%02d%02d%02d",
-				current.Year(), current.Month(), current.Day(),
-				current.Hour(), current.Minute())
-			if werr != nil {
-				t.Errorf("couldn't get time stamp from Go")
-			}
-			fmt.Println(timeS)
+		assertError(t, err, nil)
+		assertStatus(t, w.Code, http.StatusOK)
+		assertResponseBody(t, w.Body.String(), want)
+		r.Body.Close()
+	})
 
-			// Use LocalCMD to get the time
-			//
-			// this function only returns an error
-			// because it writes to a buffer as its output
-			// so make sure to test the error
-			err := LocalCMD(&buffer, app, arg)
+	t.Run("Returns an error for no port", func(t *testing.T) {
+		// mock client for extracting a request IP address
+		r := httptest.NewRequest(http.MethodGet, "/dt", nil)
+		// Set the response RemoteAddr to something without a port
+		r.RemoteAddr = "1.2.3.4"
+		w := httptest.NewRecorder()
+		got := RequestIP(w, r)
 
-			// reach into that buffer method where the string is put
-			got := buffer.String()
-			// show what it should be
-			// i need to get the value in timeS to be truncated
-			// so it can match
-			// so right now the test only works with the manual time entered here :D
-			want := "202407191645\n"
+		assertGotError(t, got)
+		r.Body.Close()
+	})
+}
 
-			if got != want {
-				t.Errorf("got %q want %q", got, want)
-			}
+func TestPing(t *testing.T) {
+	want := "pong"
 
-			// The error should be nil
-			assertError(t, err, nil)
-		})
-	*/
+	// mock client to ping()
+	r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	w := httptest.NewRecorder()
+	ping(w, r)
+
+	assertStatus(t, w.Code, http.StatusOK)
+	assertResponseBody(t, w.Body.String(), want)
+}
+
+func assertResponseBody(t testing.TB, got, want string) {
+	t.Helper()
+	if got != want {
+		t.Errorf("response body is wrong, got %q want %q", got, want)
+	}
+}
+
+func assertStatus(t testing.TB, got, want int) {
+	t.Helper()
+	if got != want {
+		t.Errorf("did not get correct status, got %d, want %d", got, want)
+	}
 }
 
 func assertError(t testing.TB, got, want error) {
 	t.Helper()
-	if got != want {
+	if !errors.Is(got, want) {
 		t.Errorf("got error %q want %q", got, want)
+	}
+}
+
+func assertGotError(t testing.TB, got error) {
+	t.Helper()
+	if got == nil {
+		t.Errorf("got error %q but expected `nil`", got)
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// define prometheus metrics
+// CFetchCount is to define prometheus metrics
 var CFetchCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Name: "CFetch_total",
 	Help: "Total number of requests for DateTime.",
