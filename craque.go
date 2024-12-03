@@ -12,22 +12,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 // check the backend server for a datetimestamp
 func dt(w http.ResponseWriter, r *http.Request) {
-	// prometheus tracing
-	dtCount.Add(1)
-	dtTimer := prometheus.NewTimer(CFetchDuration)
-	defer dtTimer.ObserveDuration()
-
 	zerolog.TimeFieldFormat = ""
 
 	// this value expects the full url,
-	// i.e.: http://localhost:9999/fetch
+	// i.e.: export BACQUE="http://localhost:9999/fetch"
 	url := os.Getenv("BACQUE")
 	craqueClient := http.Client{Timeout: time.Second * 2}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -67,7 +61,13 @@ func dt(w http.ResponseWriter, r *http.Request) {
 			Msg("service unresponsive local dt returned")
 		return
 	}
-	defer res.Body.Close()
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			log.Error().Err(err).Msg("Could not close response body")
+			return
+		}
+	}()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {

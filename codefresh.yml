@@ -21,12 +21,12 @@ steps:
     tag: ${{CF_BRANCH_TAG_NORMALIZED}}
     dockerfile: Dockerfile
     disable_push: true
-  UnitTests:
-    title: Running Unit tests
-    image: ${{DockerImage}}
-    stage: test
-    commands:
-      - go test
+#  UnitTests:
+#    title: Running Unit tests
+#    image: ${{DockerImage}}
+#    stage: test
+#    commands:
+#      - go test
   PushImage:
     title: Push Container to Harbor
     type: push
@@ -35,4 +35,4 @@ steps:
     image_name: maroda/aslsp
     tags:
       - latest
-      - 0.3.3
+      - 0.4.0

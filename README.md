@@ -47,7 +47,6 @@ DateTime=202406211524
 
 - Test the server in a browser at: [http://localhost:9999/fetch](http://localhost:9999/fetch)
 - In a terminal: `curl localhost:9999/fetch`
-- Prometheus scrape: `curl localhost:9999/metrics`
 
 The result will look identical to the client, because this is what the client fetches:
 
