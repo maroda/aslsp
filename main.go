@@ -10,20 +10,11 @@ import (
 	"flag"
 	"net/http"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	// Prometheus outputs
-	prometheus.MustRegister(CFetchCount)
-	prometheus.MustRegister(pingCount)
-	prometheus.MustRegister(apiDuration)
-	prometheus.MustRegister(dtCount)
-	prometheus.MustRegister(CFetchDuration)
-
 	// Zerolog
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
@@ -42,9 +33,6 @@ func main() {
 
 	// ping ::: readiness check that returns 200 OK 'pong'
 	http.HandleFunc("/ping", ping)
-
-	// metrics ::: prometheus metrics endpoint
-	http.Handle("/metrics", promhttp.Handler())
 
 	// Fetching from a data backend is default behavior, displaying it to the user on port 8888.
 	// The 'nofetch' flag turns this off, and this becomes the data backend to fetch from on port 9999.

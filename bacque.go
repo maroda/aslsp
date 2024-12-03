@@ -8,7 +8,6 @@
 			- displays the client Request IP address
 			- reports Local IP based on default egress
 	/ping - a readiness check
-	/metrics - prometheus metrics
 
 */
 
@@ -22,10 +21,65 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+/*
+CFetch is the primary handler,
+returning underlying system data that gets displayed to the client.
+
+Individual OS tasks are spawned from here.
+*/
+func CFetch(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var lHost string
+
+	// access a local command and return its output
+	app := "date"         // Shell command
+	arg := "+%Y%m%d%H%S"  // Command args
+	lcB := bytes.Buffer{} // LocalCMD buffer
+	err = LocalCMD(&lcB, app, arg)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not execute command")
+	}
+
+	// TODO: this should be done by LocalCMD?
+	_, err = fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
+	if err != nil {
+		log.Error().Err(err).Msg("Could not write output")
+	}
+
+	// access the request IP and return its output
+	err = RequestIP(w, r)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not fetch IP")
+	}
+
+	// Determine the local IP address
+	// ExtIPwPort can be anything reachable
+	lHost, err = FindIP(&IPConfig{ExtIPwPort: "8.8.8.8:80"})
+	if err != nil {
+		log.Error().Err(err).Msg("Could not find IP")
+	}
+
+	// TODO: this should be done by FindIP?
+	// display local IP
+	_, err = fmt.Fprintf(w, "LocalIP=%s\n", lHost)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not read output")
+	}
+
+	log.Info().
+		Str("host", r.Host).
+		Str("ref", r.RemoteAddr).
+		Str("xref", r.Header.Get("X-Forwarded-For")).
+		Str("method", r.Method).
+		Str("path", r.URL.Path).
+		Str("proto", r.Proto).
+		Str("agent", r.Header.Get("User-Agent")).
+		Str("response", "200").
+		Msg("")
+}
 
 // LocalCMD takes an output destination, the OS app to use, and the app args
 // The reason for this is to guarantee an interaction with the operating system
@@ -58,20 +112,8 @@ type IPConfig struct {
 // EgressIP uses a network call to extract the local IP address.
 // An outgoing UDP connection reveals the egress IP.
 func (ipc *IPConfig) EgressIP() (string, error) {
-	conn, err := net.Dial("udp", ipc.ExtIPwPort)
-	if err != nil {
-		log.Error().Err(err).Msg("Could not connect to external IP")
-	}
-	defer conn.Close()
-
-	// grab just the local IP (byte -> string conversion required)
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	lHost, _, err := net.SplitHostPort(localAddr.String())
-	if err != nil {
-		log.Error().Err(err).Msg("Could not split host and port")
-	}
-
-	return lHost, err
+	// For now all we need is to call EgIP
+	return EgIP(ipc.ExtIPwPort)
 }
 
 // FindIP to locate the local system's network egress IP address.
@@ -86,6 +128,7 @@ func FindIP(i IPFinder) (string, error) {
 
 // EgIP takes an IP:PORT string and returns the local IP address
 // used for outbound network traffic.
+// This is the non-interface version of EgressIP
 func EgIP(e string) (string, error) {
 	var lHost string
 
@@ -102,7 +145,13 @@ func EgIP(e string) (string, error) {
 		log.Error().Err(err).Msg("Could not create connection")
 		return rHost, err
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Error().Err(err).Msg("Could not close external IP connection")
+			return
+		}
+	}()
 
 	// grab the local IP
 	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
@@ -145,72 +194,8 @@ func RequestIP(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-/*
-CFetch is the primary handler,
-returning underlying system data that gets displayed to the client.
-
-Individual OS tasks are spawned from here.
-*/
-func CFetch(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var lHost string
-
-	// prometheus tracing
-	CFetchCount.Add(1)
-	dtTimer := prometheus.NewTimer(apiDuration)
-	defer dtTimer.ObserveDuration()
-
-	// access a local command and return its output
-	app := "date"         // Shell command
-	arg := "+%Y%m%d%H%S"  // Command args
-	lcB := bytes.Buffer{} // LocalCMD buffer
-	err = LocalCMD(&lcB, app, arg)
-	if err != nil {
-		log.Error().Err(err).Msg("Could not execute command")
-	}
-
-	// TODO: this should be done by LocalCMD?
-	_, err = fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
-	if err != nil {
-		log.Error().Err(err).Msg("Could not write output")
-	}
-
-	// access the request IP and return its output
-	err = RequestIP(w, r)
-	if err != nil {
-		log.Error().Err(err).Msg("Could not fetch IP")
-	}
-
-	// Determine the local IP address
-	// ExtIPwPort can be anything reachable
-	lHost, err = FindIP(&IPConfig{ExtIPwPort: "8.8.8.8:80"})
-	if err != nil {
-		log.Error().Err(err).Msg("Could not find IP")
-	}
-
-	// TODO: this should be done by FindIP?
-	// display local IP
-	_, err = fmt.Fprintf(w, "LocalIP=%s\n", lHost)
-	if err != nil {
-		log.Error().Err(err).Msg("Could not read output")
-	}
-
-	zerolog.TimeFieldFormat = ""
-	log.Info().
-		Str("host", r.Host).
-		Str("ref", r.RemoteAddr).
-		Str("xref", r.Header.Get("X-Forwarded-For")).
-		Str("method", r.Method).
-		Str("path", r.URL.Path).
-		Str("proto", r.Proto).
-		Str("agent", r.Header.Get("User-Agent")).
-		Str("response", "200").
-		Msg("")
-}
-
 // ping is a simple readiness check that answers with 'pong'
 func ping(w http.ResponseWriter, r *http.Request) {
-	pingCount.Add(1)
 	_, err := w.Write([]byte("pong"))
 	if err != nil {
 		log.Error().Err(err).Msg("Could not write output")

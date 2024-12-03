@@ -54,10 +54,6 @@ metadata:
   labels:
     app: bacque
     service: bacque
-  annotations:
-    prometheus.io/port: "9999"
-    prometheus.io/scheme: http
-    prometheus.io/scrape: "true"
 spec:
   type: NodePort
   selector:

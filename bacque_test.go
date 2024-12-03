@@ -20,7 +20,7 @@ type mockIPConfig struct {
 }
 
 func (ipc *mockIPConfig) EgressIP() (string, error) {
-	return "10.10.10.95", nil
+	return localIP, nil
 }
 
 func TestFindIP(t *testing.T) {
@@ -28,6 +28,17 @@ func TestFindIP(t *testing.T) {
 		mockIP := &mockIPConfig{ExtIPwPort: "0.0.0.0:0"}
 		got, err := FindIP(mockIP)
 
+		assertString(t, got, localIP)
+		assertError(t, err, nil)
+	})
+}
+
+// Integration test: TCP/IP
+func TestIPConfig_EgressIP(t *testing.T) {
+	t.Run("Retrieves the egress IP address", func(t *testing.T) {
+		// interface struct
+		mockIP := &mockIPConfig{ExtIPwPort: googleIP}
+		got, err := mockIP.EgressIP()
 		assertString(t, got, localIP)
 		assertError(t, err, nil)
 	})
@@ -88,7 +99,9 @@ func TestRequestIP(t *testing.T) {
 		assertError(t, err, nil)
 		assertStatus(t, w.Code, http.StatusOK)
 		assertResponseBody(t, w.Body.String(), want)
-		r.Body.Close()
+
+		err = r.Body.Close()
+		assertError(t, err, nil)
 	})
 
 	t.Run("Returns an error for no port", func(t *testing.T) {
@@ -100,7 +113,9 @@ func TestRequestIP(t *testing.T) {
 		got := RequestIP(w, r)
 
 		assertGotError(t, got)
-		r.Body.Close()
+
+		err := r.Body.Close()
+		assertError(t, err, nil)
 	})
 }
 
@@ -114,12 +129,6 @@ func TestPing(t *testing.T) {
 
 	assertStatus(t, w.Code, http.StatusOK)
 	assertResponseBody(t, w.Body.String(), want)
-}
-
-func TestIPConfig_EgressIP(t *testing.T) {
-	t.Run("Returns the egress IP address", func(t *testing.T) {
-
-	})
 }
 
 func assertResponseBody(t testing.TB, got, want string) {
@@ -145,8 +154,8 @@ func assertError(t testing.TB, got, want error) {
 
 func assertGotError(t testing.TB, got error) {
 	t.Helper()
-	if got == nil {
-		t.Errorf("got error %q but expected `nil`", got)
+	if errors.Is(got, nil) {
+		t.Errorf("expected an error but got nil (%q)", got)
 	}
 }
 
