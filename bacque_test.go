@@ -10,7 +10,8 @@ import (
 
 // Used here for OS integration tests
 var (
-	localIP = "10.10.10.95"
+	localIP  = "10.10.10.95"
+	googleIP = "8.8.8.8:80"
 )
 
 // For mocking FindIP
@@ -35,17 +36,14 @@ func TestFindIP(t *testing.T) {
 // Integration test: TCP/IP
 func TestEgIP(t *testing.T) {
 	t.Run("Retrieves the egress IP address", func(t *testing.T) {
-		e := "8.8.8.8:80" // external address
-		got, err := EgIP(e)
-
+		got, err := EgIP(googleIP)
 		assertString(t, got, localIP)
 		assertError(t, err, nil)
 	})
 
 	t.Run("Throws an error with no port given", func(t *testing.T) {
-		e := "8.8.8.8" // external address
+		e := "8.8.8.8" // any address minus the port
 		_, err := EgIP(e)
-
 		assertGotError(t, err)
 	})
 }
@@ -116,6 +114,12 @@ func TestPing(t *testing.T) {
 
 	assertStatus(t, w.Code, http.StatusOK)
 	assertResponseBody(t, w.Body.String(), want)
+}
+
+func TestIPConfig_EgressIP(t *testing.T) {
+	t.Run("Returns the egress IP address", func(t *testing.T) {
+
+	})
 }
 
 func assertResponseBody(t testing.TB, got, want string) {

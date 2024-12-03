@@ -45,7 +45,7 @@ func LocalCMD(w io.Writer, app, arg string) error {
 	return err
 }
 
-// IPFinder determines the local machine IP address.
+// IPFinder determines IP addresses
 type IPFinder interface {
 	EgressIP() (string, error)
 }
@@ -99,16 +99,22 @@ func EgIP(e string) (string, error) {
 	// an outgoing UDP connection reveals the egress IP
 	conn, err := net.Dial("udp", e)
 	if err != nil {
-		log.Error().Err(err).Msg("Could not connect to external IP")
+		log.Error().Err(err).Msg("Could not create connection")
+		return rHost, err
 	}
 	defer conn.Close()
 
-	// grab just the local IP (byte -> string conversion required)
+	// grab the local IP
 	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
 	if ok {
-		lHost, _, err = net.SplitHostPort(localAddr.String())
-		if err != nil {
-			log.Error().Err(err).Msg("Could not split host and port")
+		// Only split off the port if we get an IPv4 address
+		if ipv4 := localAddr.IP.To4(); ipv4 != nil {
+			lHost, _, err = net.SplitHostPort(localAddr.String())
+			if err != nil {
+				log.Error().Err(err).Msg("Could not split host and port")
+			}
+		} else {
+			lHost = localAddr.IP.String()
 		}
 	}
 
@@ -119,7 +125,7 @@ func EgIP(e string) (string, error) {
 // This is a bit different from other functions,
 // because it writes its result instead of returning one.
 func RequestIP(w http.ResponseWriter, r *http.Request) error {
-	// grab just the IP of the requester
+	// grab the IP of the requester
 	rHost, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		log.Error().Err(err).Msg("Could not split host and port")
@@ -127,6 +133,9 @@ func RequestIP(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// display request IP
+	if rHost == "::1" {
+		rHost = "localhost-ipv6"
+	}
 	_, err = fmt.Fprintf(w, "RequestIP=%s\n", rHost)
 	if err != nil {
 		log.Error().Err(err).Msg("Could not write output")
@@ -136,7 +145,12 @@ func RequestIP(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// CFetch is an API call that returns local system datetime
+/*
+CFetch is the primary handler,
+returning underlying system data that gets displayed to the client.
+
+Individual OS tasks are spawned from here.
+*/
 func CFetch(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var lHost string
