@@ -1,5 +1,8 @@
 /*
 	Craque
+
+	/dt - attempts a call to bacque/fetch and prints the results
+
 */
 
 package main
@@ -12,40 +15,64 @@ import (
 	"os"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-// check the backend server for a datetimestamp
-func dt(w http.ResponseWriter, r *http.Request) {
-	zerolog.TimeFieldFormat = ""
+const (
+	osDateCmd = "date"
+	osDateArg = "+%Y%m%d%H%S"
+)
 
+func getDate(cmd, arg string) (string, error) {
+	appbuf := bytes.Buffer{}
+	err := LocalCMD(&appbuf, cmd, arg)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not get date")
+	}
+
+	// t := time.Now().Format("200601021504") // Full layout date: "20060102150405"
+	t := appbuf.String()
+	return t, err
+}
+
+func failBacque(w io.Writer) error {
+	// Get a local datetime
+	datetime, err := getDate(osDateCmd, osDateArg)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not get local datetime")
+	}
+
+	_, err = fmt.Fprintf(w, "DateTime=%q\n", datetime)
+	if err != nil {
+		log.Error().Err(err).Msg("Could not write DateTime output")
+	}
+
+	return err
+}
+
+/*
+dt is the primary handler,
+checking a remote host for endpoint data
+and substituting a fall-back value when it's unavailable.
+*/
+func dt(w http.ResponseWriter, r *http.Request) {
 	// this value expects the full url,
 	// i.e.: export BACQUE="http://localhost:9999/fetch"
 	url := os.Getenv("BACQUE")
 	craqueClient := http.Client{Timeout: time.Second * 2}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Error().Err(err).Msg("Could not create request")
+		log.Error().Err(err).Msg("Could not create new request")
 	}
 	req.Header.Set("User-Agent", "craquego")
 
 	res, err := craqueClient.Do(req)
 	if err != nil {
+		http.Error(w, http.StatusText(418), 418)
+
 		// if BACQUE fails, fall back to a local timestamp only,
 		// not the enriched IP addresses that BACQUE returns.
-		http.Error(w, http.StatusText(418), 418)
-		app := "date"
-		arg := "+%Y%m%d%H%S"
-		lcB := bytes.Buffer{}
-		lcerr := LocalCMD(&lcB, app, arg)
-		if lcerr != nil {
-			log.Fatal()
-		}
-		_, err := fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
-		if err != nil {
-			log.Error().Err(err).Msg("Could not write output")
-		}
+		// failBacque()
 
 		// log service unresponsive
 		log.Error().
@@ -59,7 +86,7 @@ func dt(w http.ResponseWriter, r *http.Request) {
 			Str("response", "418").
 			Err(err).
 			Msg("service unresponsive local dt returned")
-		return
+
 	}
 	defer func() {
 		err := res.Body.Close()
