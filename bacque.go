@@ -34,17 +34,14 @@ func CFetch(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var lHost string
 
-	// access a local command and return its output
-	app := "date"         // Shell command
-	arg := "+%Y%m%d%H%S"  // Command args
-	lcB := bytes.Buffer{} // LocalCMD buffer
-	err = LocalCMD(&lcB, app, arg)
+	// Get a local datetime
+	datetime, err := getDate(osDateCmd, osDateArg)
 	if err != nil {
-		log.Error().Err(err).Msg("Could not execute command")
+		log.Error().Err(err).Msg("Could not get datetime")
 	}
 
-	// TODO: this should be done by LocalCMD?
-	_, err = fmt.Fprintf(w, "DateTime=%q\n", lcB.String())
+	// Print datetime to the output
+	_, err = fmt.Fprintf(w, "DateTime=%q\n", datetime)
 	if err != nil {
 		log.Error().Err(err).Msg("Could not write output")
 	}
